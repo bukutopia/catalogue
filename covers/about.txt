@@ -1,0 +1,1 @@
+Book cover images for the Bukutopia catalogue, referenced by ISBN from catalogue.js.
