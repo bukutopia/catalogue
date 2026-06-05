@@ -468,7 +468,7 @@ const CHECKOUT_CSS=`
 #coModal .co-tabs{display:flex;gap:8px;margin:2px 0 6px}
 #coModal .co-tab{flex:1;padding:9px;border:1px solid #e0d6c2;border-radius:9px;background:#fff;font:inherit;font-weight:700;color:#103160;cursor:pointer}
 #coModal .co-tab.on{background:#103160;color:#fff;border-color:#103160}
-#coModal .co-big{font-size:26px;font-weight:800;color:#103160;margin:2px 0}`;
+#coModal .co-big{font-size:26px;font-weight:800;color:#103160;margin:2px 0}\n#coModal .co-confirm{background:#fff8e6;border:1px solid #f1d889;border-radius:9px;padding:11px 13px;font-size:13px;color:#5a4a2a;margin:10px 0 0;line-height:1.55}\n#coModal .co-confirm[hidden]{display:none}`;
 
 const modalBg=document.getElementById("modalBg");
 const coModal=document.getElementById("coModal");
@@ -577,7 +577,7 @@ function stepAccount(){
     <p class="co-sub">Log in or create your account to place the order.</p>
     <div class="co-tabs"><button class="co-tab on" id="tabLogin">I have an account</button>
       <button class="co-tab" id="tabSignup">Create account</button></div>
-    <div id="coForm"></div><div class="co-err" id="coErr"></div>
+    <div id="coForm"></div><div class="co-confirm" id="coConfirm" hidden></div><div class="co-err" id="coErr"></div>
     <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Back</button>
       <button class="btn-wa" id="coGo" style="flex:1.4;justify-content:center">Continue</button></div>`);
   let mode="login";
@@ -593,19 +593,34 @@ function stepAccount(){
   coModal.querySelector("#tabLogin").onclick=()=>{mode="login";coModal.querySelector("#tabLogin").classList.add("on");coModal.querySelector("#tabSignup").classList.remove("on");paint();};
   coModal.querySelector("#tabSignup").onclick=()=>{mode="signup";coModal.querySelector("#tabSignup").classList.add("on");coModal.querySelector("#tabLogin").classList.remove("on");paint();};
   coModal.querySelector("#coBack").onclick=stepReview;
-  coModal.querySelector("#coGo").onclick=async()=>{
+  const goBtn=coModal.querySelector("#coGo"), confBox=coModal.querySelector("#coConfirm");
+  let confirmed=false;
+  function resetConfirm(){confirmed=false;goBtn.textContent="Continue";if(confBox){confBox.hidden=true;confBox.innerHTML="";}}
+  form.addEventListener("input",resetConfirm);   // editing any field re-arms the double-check
+  coModal.querySelector("#tabLogin").addEventListener("click",resetConfirm);
+  coModal.querySelector("#tabSignup").addEventListener("click",resetConfirm);
+  goBtn.onclick=async()=>{
     const g=id=>{const el=coModal.querySelector(id);return el?el.value.trim():"";};
     const phone=g("#f_phone"), pass=g("#f_pass");
+    const name=mode==="signup"?g("#f_name"):"", addr=mode==="signup"?g("#f_addr"):"";
     if(!phone||!pass){err.textContent="Please fill in your number and passcode.";return;}
+    if(mode==="signup"&&(!name||!addr)){err.textContent="Please fill in your name and delivery address.";return;}
+    if(!confirmed){
+      confBox.hidden=false;
+      confBox.innerHTML=`<b>Please double-check these are correct 👇</b><br>📱 WhatsApp: <b>${esc(phone)}</b>`+
+        (mode==="signup"?`<br>📦 Delivery address: <b>${esc(addr)}</b>`:"")+
+        `<br><span style="color:#7c879b">We'll deliver here and message you on this number.</span>`;
+      confirmed=true; goBtn.textContent="Yes, that's correct"; return;
+    }
     err.textContent="Please wait…";
     try{
       let res;
       if(mode==="login") res=await apiPub("login",{whatsapp:phone,passcode:pass});
-      else res=await apiPub("signup",{name:g("#f_name"),whatsapp:phone,address:g("#f_addr"),passcode:pass});
-      if(res.error){err.textContent=res.error;return;}
+      else res=await apiPub("signup",{name,whatsapp:phone,address:addr,passcode:pass});
+      if(res.error){err.textContent=res.error;resetConfirm();return;}
       session={accountId:res.accountId,whatsapp:phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};
       stepConfirm();
-    }catch(e){err.textContent="Couldn't connect. Please try again.";}
+    }catch(e){err.textContent="Couldn't connect. Please try again.";resetConfirm();}
   };
 }
 
