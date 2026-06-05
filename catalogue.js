@@ -18,6 +18,10 @@ const SHEET_CSV_URL   = "";
    WhatsApp order message (no accounts) until the backend is deployed. */
 const API_URL         = "";
 const MAX_BOOKS       = 4;
+/* Payment QR shown at checkout. Put your DuitNow/Maybank QR image in this
+   folder (and in the GitHub repo) named exactly payment-qr.png. */
+const PAYMENT_QR_URL  = "payment-qr.png";
+const PAYEE_NAME      = "Justin Tiew Senn · Maybank";
 
 const SERIES_COLORS = {
   pink:["#f7b8c4","#ef94a6"], green:["#bfe3cf","#8fccb0"], blue:["#bcd9e8","#8fb9d6"],
@@ -610,8 +614,15 @@ function stepPay(order){
     `(${deposit?"refundable deposit, first month free":"rental checkout"}). My payment receipt is attached. 🙏`;
   const link=`https://wa.me/${waNum()}?text=${encodeURIComponent(msg)}`;
   show(`<h3 class="co-h">Order placed — ref ${ref} 🎉</h3>
-    <p class="co-sub">To complete checkout, pay <b>${money(order.amount)}</b> and send us your receipt on WhatsApp <b>within 24 hours</b>. Unpaid orders are released automatically after that.</p>
-    <div class="co-note"><b>1.</b> Scan our payment QR / transfer ${money(order.amount)}.<br>
+    <p class="co-sub">To complete checkout, pay and send us your receipt on WhatsApp <b>within 24 hours</b>. Unpaid orders are released automatically after that.</p>
+    <div style="text-align:center;margin:4px 0 10px">
+      <div class="co-big">${money(order.amount)}</div>
+      <img src="${PAYMENT_QR_URL}" alt="Payment QR" style="width:210px;height:210px;object-fit:contain;border:1px solid #eadfca;border-radius:12px;padding:8px;background:#fff"
+        onerror="this.style.display='none';document.getElementById('qrFallback').style.display='block'">
+      <div id="qrFallback" style="display:none;font-size:13px;color:#5a4a2a;background:#fff8e6;border:1px solid #f1d889;border-radius:9px;padding:11px 13px">Pay by DuitNow to <b>${esc(PAYEE_NAME)}</b>, then send your receipt below.</div>
+      <div style="font-size:12.5px;color:#7c879b;margin-top:6px">Scan with any banking app · ${esc(PAYEE_NAME)}</div>
+    </div>
+    <div class="co-note"><b>1.</b> Scan the QR and pay ${money(order.amount)}.<br>
       <b>2.</b> Tap the button below and attach your receipt screenshot.<br>
       <b>3.</b> We'll confirm, pack your books and arrange delivery. 📦</div>
     <div class="co-row"><button class="btn-clear" id="coClose" style="flex:1">Done</button>
