@@ -13,6 +13,11 @@
    ============================================================ */
 const WHATSAPP_NUMBER = "60129359787";
 const SHEET_CSV_URL   = "";
+/* Paste your Apps Script Web app URL (ends with /exec) to turn on accounts,
+   live availability and real orders. Leave "" to fall back to a simple
+   WhatsApp order message (no accounts) until the backend is deployed. */
+const API_URL         = "";
+const MAX_BOOKS       = 4;
 
 const SERIES_COLORS = {
   pink:["#f7b8c4","#ef94a6"], green:["#bfe3cf","#8fccb0"], blue:["#bcd9e8","#8fb9d6"],
@@ -401,42 +406,219 @@ const cartbar=document.getElementById("cartbar");
 function updateCart(){
   const n=cart.size;
   cartbar.classList.toggle("show",n>0);
-  const over=n>4;
+  const over=n>MAX_BOOKS;
   document.getElementById("cartCount").innerHTML = over
-    ? `${n} books selected <span class="cart-warn">(max 4 per name)</span>`
+    ? `${n} books selected <span class="cart-warn">(max ${MAX_BOOKS} per name — remove ${n-MAX_BOOKS})</span>`
     : `${n} ${n===1?"book":"books"} selected`;
   document.getElementById("cartTitles").textContent=[...cart].map(k=>k.split(" :: ")[1]).join(", ");
+  const btn=document.getElementById("btnOrder");
+  if(btn){ btn.disabled=over; btn.style.opacity=over?.55:1; btn.style.cursor=over?"not-allowed":"pointer";
+    btn.title=over?`Remove ${n-MAX_BOOKS} book(s) to check out`:""; }
 }
 document.getElementById("btnClear").addEventListener("click",()=>{cart.clear();updateCart();render();});
 
+/* ===================== Checkout flow (Ordering process) =====================
+   Implements process-flows.html Flow 1. See SYSTEM-DESIGN.md §5.
+   Steps: review → availability → account → confirm → pay (24h). */
+const CHECKOUT_CSS=`
+#coModal .co-h{font-family:'Playfair Display',serif;font-size:21px;color:#103160;margin:0 0 4px}
+#coModal .co-sub{color:#7c879b;font-size:13.5px;margin:0 0 14px;line-height:1.5}
+#coModal .co-list{max-height:180px;overflow:auto;margin:0 0 6px}
+#coModal .co-li{padding:7px 0;border-bottom:1px dashed #eadfca;font-size:14px;color:#243447}
+#coModal .co-li span{color:#9a8a72;font-weight:600}
+#coModal label{display:block;font-size:12.5px;color:#5a6b7a;margin:9px 0 3px;font-weight:600}
+#coModal input{width:100%;padding:10px 12px;border:1px solid #e0d6c2;border-radius:9px;font:inherit;font-size:14px}
+#coModal .co-note{background:#fff8e6;border:1px solid #f1d889;border-radius:9px;padding:11px 13px;font-size:13px;color:#5a4a2a;margin:12px 0}
+#coModal .co-err{color:#c0392b;font-size:13px;margin:8px 0 0;min-height:16px}
+#coModal .co-row{display:flex;gap:10px;margin-top:14px}
+#coModal .co-tabs{display:flex;gap:8px;margin:2px 0 6px}
+#coModal .co-tab{flex:1;padding:9px;border:1px solid #e0d6c2;border-radius:9px;background:#fff;font:inherit;font-weight:700;color:#103160;cursor:pointer}
+#coModal .co-tab.on{background:#103160;color:#fff;border-color:#103160}
+#coModal .co-big{font-size:26px;font-weight:800;color:#103160;margin:2px 0}`;
+
 const modalBg=document.getElementById("modalBg");
-document.getElementById("btnOrder").addEventListener("click",openModal);
-document.getElementById("modalCancel").addEventListener("click",()=>modalBg.classList.remove("show"));
-modalBg.addEventListener("click",e=>{if(e.target===modalBg)modalBg.classList.remove("show");});
-function openModal(){
-  const items=[...cart];
-  document.getElementById("modalList").innerHTML=items.map(k=>{
-    const [s,t]=k.split(" :: ");
-    return `<div class="li">${esc(t)} <span style="color:#9a8a72;font-weight:600">— ${esc(s)}</span></div>`;
-  }).join("");
-  document.getElementById("modalNote").textContent = items.length>4
-    ? `You've picked ${items.length} books. Rentals are up to 4 books per registered name — we'll help you trim the list.`
-    : `${items.length} of 4 books selected. New customers pay only the RM60 refundable deposit (first month free).`;
-  modalBg.classList.add("show");
+const coModal=document.getElementById("coModal");
+function closeCheckout(){modalBg.classList.remove("show");}
+modalBg.addEventListener("click",e=>{if(e.target===modalBg)closeCheckout();});
+document.getElementById("btnOrder").addEventListener("click",openCheckout);
+
+let session=null;     // {accountId, whatsapp, passcode, name, firstOrder}
+let coItems=[];       // [{key,series,title,isbn,price}]
+let PUBLIC_SETTINGS={deposit:60,maxBooks:4};   // refreshed from backend on load
+
+const waNum=()=>WHATSAPP_NUMBER.replace(/[^0-9]/g,"");
+const money=n=>"RM"+(Math.round(Number(n)*100)/100);
+function cartItems(){
+  return [...cart].map(key=>{
+    const [series,title]=key.split(" :: ");
+    const s=BOOKS.find(x=>x.series===series)||{};
+    let isbn=""; if(s.books){const b=s.books.find(bk=>bk.title===title); if(b)isbn=b.isbn||"";}
+    return {key,series,title,isbn,price:Number(s.price)||0};
+  });
 }
-document.getElementById("modalSend").addEventListener("click",()=>{
-  const items=[...cart];
-  let msg="Hi Bukutopia! 📚 I'd like to rent these books:\n";
-  items.forEach((k,i)=>{const [s,t]=k.split(" :: ");msg+=`${i+1}. ${t} (${s})\n`;});
-  msg+="\nCould you check availability for me? Thank you!";
-  const num=WHATSAPP_NUMBER.replace(/[^0-9]/g,"");
-  if(num.includes("X")||num.length<8){
-    alert("WhatsApp number not set yet.\n\nHere is the order message:\n\n"+msg);
-    return;
+async function apiPub(action,payload){
+  const r=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body:JSON.stringify(Object.assign({action},payload||{}))});
+  return r.json();
+}
+function show(html){coModal.innerHTML=html;modalBg.classList.add("show");}
+
+function openCheckout(){
+  if(cart.size===0)return;
+  if(cart.size>MAX_BOOKS){
+    show(`<h3 class="co-h">Just a little too many 📚</h3>
+      <p class="co-sub">You've picked ${cart.size} books. Rentals are up to ${MAX_BOOKS} books per registered name — please remove ${cart.size-MAX_BOOKS} to check out.</p>
+      <div class="co-row"><button class="btn-wa" id="coClose" style="flex:1;justify-content:center">Back to my list</button></div>`);
+    coModal.querySelector("#coClose").onclick=closeCheckout; return;
   }
+  coItems=cartItems();
+  if(!API_URL){legacyWhatsApp();return;}
+  stepReview();
+}
+
+/* fallback used until the backend URL is set */
+function legacyWhatsApp(){
+  let msg="Hi Bukutopia! 📚 I'd like to rent these books:\n";
+  coItems.forEach((it,i)=>{msg+=`${i+1}. ${it.title} (${it.series})\n`;});
+  msg+="\nCould you check availability for me? Thank you!";
+  const num=waNum();
+  if(num.length<8){alert("Order message:\n\n"+msg);return;}
   window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`,"_blank");
-  modalBg.classList.remove("show");
-});
+}
+
+function liRows(){return coItems.map(it=>`<div class="co-li">${esc(it.title)} <span>— ${esc(it.series)}</span></div>`).join("");}
+
+function stepReview(){
+  show(`<h3 class="co-h">Your book list</h3>
+    <p class="co-sub">${coItems.length} of ${MAX_BOOKS} books. We'll check they're all available, then set up your order.</p>
+    <div class="co-list">${liRows()}</div>
+    <div class="co-row">
+      <button class="btn-clear" id="coBack" style="flex:1">Keep browsing</button>
+      <button class="btn-wa" id="coNext" style="flex:1.4;justify-content:center">Check out</button>
+    </div>`);
+  coModal.querySelector("#coBack").onclick=closeCheckout;
+  coModal.querySelector("#coNext").onclick=stepAvailability;
+}
+
+async function stepAvailability(){
+  show(`<h3 class="co-h">Checking availability…</h3><p class="co-sub">One moment please.</p>`);
+  const isbns=coItems.map(it=>it.isbn).filter(Boolean);
+  let res={};
+  try{ res = isbns.length? await apiPub("checkAvailability",{isbns}) : {ok:true,unavailable:[]}; }
+  catch(e){ res={error:"network"}; }
+  if(res.error){
+    show(`<h3 class="co-h">Couldn't reach us 📡</h3>
+      <p class="co-sub">We couldn't check availability just now. Please try again in a moment.</p>
+      <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Back</button>
+      <button class="btn-wa" id="coRetry" style="flex:1.4;justify-content:center">Try again</button></div>`);
+    coModal.querySelector("#coBack").onclick=stepReview;
+    coModal.querySelector("#coRetry").onclick=stepAvailability; return;
+  }
+  const un=new Set(res.unavailable||[]);
+  if(un.size){
+    const removed=coItems.filter(it=>un.has(it.isbn));
+    removed.forEach(it=>cart.delete(it.key));
+    coItems=coItems.filter(it=>!un.has(it.isbn));
+    updateCart();render();
+    if(coItems.length===0){
+      show(`<h3 class="co-h">Those have just gone out 😢</h3>
+        <p class="co-sub">Sorry, ${removed.map(r=>esc(r.title)).join(", ")} ${removed.length>1?"are":"is"} no longer available. Please pick something else.</p>
+        <div class="co-row"><button class="btn-wa" id="coClose" style="flex:1;justify-content:center">Back to catalogue</button></div>`);
+      coModal.querySelector("#coClose").onclick=closeCheckout; return;
+    }
+    show(`<h3 class="co-h">A couple just went out</h3>
+      <p class="co-sub">We removed: ${removed.map(r=>esc(r.title)).join(", ")}. The rest are available — continue with these ${coItems.length}?</p>
+      <div class="co-list">${liRows()}</div>
+      <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Edit list</button>
+      <button class="btn-wa" id="coNext" style="flex:1.4;justify-content:center">Continue</button></div>`);
+    coModal.querySelector("#coBack").onclick=closeCheckout;
+    coModal.querySelector("#coNext").onclick=stepAccount; return;
+  }
+  stepAccount();
+}
+
+function stepAccount(){
+  if(session){return stepConfirm();}
+  show(`<h3 class="co-h">Almost there</h3>
+    <p class="co-sub">Log in or create your account to place the order.</p>
+    <div class="co-tabs"><button class="co-tab on" id="tabLogin">I have an account</button>
+      <button class="co-tab" id="tabSignup">Create account</button></div>
+    <div id="coForm"></div><div class="co-err" id="coErr"></div>
+    <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Back</button>
+      <button class="btn-wa" id="coGo" style="flex:1.4;justify-content:center">Continue</button></div>`);
+  let mode="login";
+  const form=coModal.querySelector("#coForm"), err=coModal.querySelector("#coErr");
+  const loginForm=`<label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789">
+    <label>Passcode</label><input id="f_pass" type="password" placeholder="Your passcode">`;
+  const signupForm=`<label>Your name</label><input id="f_name" placeholder="Full name">
+    <label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789">
+    <label>Delivery address</label><input id="f_addr" placeholder="Unit, street, postcode">
+    <label>Choose a passcode</label><input id="f_pass" type="password" placeholder="At least 4 characters">`;
+  function paint(){form.innerHTML=mode==="login"?loginForm:signupForm;err.textContent="";}
+  paint();
+  coModal.querySelector("#tabLogin").onclick=()=>{mode="login";coModal.querySelector("#tabLogin").classList.add("on");coModal.querySelector("#tabSignup").classList.remove("on");paint();};
+  coModal.querySelector("#tabSignup").onclick=()=>{mode="signup";coModal.querySelector("#tabSignup").classList.add("on");coModal.querySelector("#tabLogin").classList.remove("on");paint();};
+  coModal.querySelector("#coBack").onclick=stepReview;
+  coModal.querySelector("#coGo").onclick=async()=>{
+    const g=id=>{const el=coModal.querySelector(id);return el?el.value.trim():"";};
+    const phone=g("#f_phone"), pass=g("#f_pass");
+    if(!phone||!pass){err.textContent="Please fill in your number and passcode.";return;}
+    err.textContent="Please wait…";
+    try{
+      let res;
+      if(mode==="login") res=await apiPub("login",{whatsapp:phone,passcode:pass});
+      else res=await apiPub("signup",{name:g("#f_name"),whatsapp:phone,address:g("#f_addr"),passcode:pass});
+      if(res.error){err.textContent=res.error;return;}
+      session={accountId:res.accountId,whatsapp:phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};
+      stepConfirm();
+    }catch(e){err.textContent="Couldn't connect. Please try again.";}
+  };
+}
+
+function stepConfirm(){
+  const total=coItems.reduce((s,it)=>s+it.price,0);
+  const first=session.firstOrder;
+  const amount=first?Number(PUBLIC_SETTINGS.deposit||60):total;
+  show(`<h3 class="co-h">Hi ${esc(session.name||"there")} 👋</h3>
+    <p class="co-sub">${coItems.length} book(s) — ${coItems.map(i=>esc(i.title)).join(", ")}</p>
+    ${first
+      ? `<div class="co-note"><b>First order</b> — your first month is on us. You pay only the <b>RM${PUBLIC_SETTINGS.deposit||60} refundable deposit</b> to get started.</div><div class="co-big">${money(amount)} <span style="font-size:13px;color:#7c879b;font-weight:600">refundable deposit</span></div>`
+      : `<div class="co-note">Returning order — pay the rental total below.</div><div class="co-big">${money(amount)}</div>`}
+    <div class="co-err" id="coErr"></div>
+    <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Back</button>
+      <button class="btn-wa" id="coPlace" style="flex:1.4;justify-content:center">Place order</button></div>`);
+  coModal.querySelector("#coBack").onclick=stepReview;
+  coModal.querySelector("#coPlace").onclick=async()=>{
+    const err=coModal.querySelector("#coErr"); err.textContent="Placing your order…";
+    try{
+      const res=await apiPub("createOrder",{whatsapp:session.whatsapp,passcode:session.passcode,
+        items:coItems.map(it=>({isbn:it.isbn,title:it.title,price:it.price}))});
+      if(res.error){
+        if(res.error==="unavailable"){err.textContent="";stepAvailability();return;}
+        err.textContent=res.error;return;
+      }
+      cart.clear();updateCart();render();
+      stepPay(res.order);
+    }catch(e){err.textContent="Couldn't place the order. Please try again.";}
+  };
+}
+
+function stepPay(order){
+  const ref=String(order.id).slice(0,8).toUpperCase();
+  const deposit=order.type==="deposit";
+  const msg=`Hi Bukutopia! 📚 Order ${ref} — ${order.titles}. I'm paying ${money(order.amount)} `+
+    `(${deposit?"refundable deposit, first month free":"rental checkout"}). My payment receipt is attached. 🙏`;
+  const link=`https://wa.me/${waNum()}?text=${encodeURIComponent(msg)}`;
+  show(`<h3 class="co-h">Order placed — ref ${ref} 🎉</h3>
+    <p class="co-sub">To complete checkout, pay <b>${money(order.amount)}</b> and send us your receipt on WhatsApp <b>within 24 hours</b>. Unpaid orders are released automatically after that.</p>
+    <div class="co-note"><b>1.</b> Scan our payment QR / transfer ${money(order.amount)}.<br>
+      <b>2.</b> Tap the button below and attach your receipt screenshot.<br>
+      <b>3.</b> We'll confirm, pack your books and arrange delivery. 📦</div>
+    <div class="co-row"><button class="btn-clear" id="coClose" style="flex:1">Done</button>
+      <a class="btn-wa" id="coWa" href="${link}" target="_blank" style="flex:1.5;justify-content:center;text-decoration:none">Send receipt on WhatsApp</a></div>`);
+  coModal.querySelector("#coClose").onclick=closeCheckout;
+  coModal.querySelector("#coWa").onclick=()=>{setTimeout(closeCheckout,400);};
+}
 
 function buildFilters(){
   const ages=[...new Set(BOOKS.map(s=>s.age))].sort((a,b)=>parseInt(a)-parseInt(b));
@@ -446,8 +628,14 @@ function buildFilters(){
   const audSel=document.getElementById("aud");
   auds.forEach(a=>audSel.insertAdjacentHTML("beforeend",`<option value="${a}">${a}</option>`));
 }
+async function loadPublicSettings(){
+  if(!API_URL)return;
+  try{const r=await fetch(API_URL);const d=await r.json();
+    if(d&&d.settings)PUBLIC_SETTINGS=Object.assign(PUBLIC_SETTINGS,d.settings);}catch(e){}
+}
 async function init(){
-  document.head.insertAdjacentHTML("beforeend","<style>"+PILOT_CSS+"</style>");
+  document.head.insertAdjacentHTML("beforeend","<style>"+PILOT_CSS+CHECKOUT_CSS+"</style>");
+  loadPublicSettings();
   const note=document.getElementById("srcnote");
   if(SHEET_CSV_URL){
     try{
