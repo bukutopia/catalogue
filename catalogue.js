@@ -49,6 +49,10 @@ const PILOT_CSS = `
 .book-title{font-weight:700;font-size:13.5px;color:var(--navy);flex:1;line-height:1.35}
 .book-desc{display:none;font-size:12.5px;color:#52627a;margin:7px 2px 2px;line-height:1.55}
 .book.open .book-desc{display:block}
+.remove-all{width:100%;margin-top:7px;border:1.5px solid #e5dcc9;background:#fff;color:#103160;
+  font-weight:700;font-size:13px;border-radius:999px;padding:9px;cursor:pointer;transition:.15s}
+.remove-all:hover{border-color:#e9755c;color:#c0503a}
+.remove-all[hidden]{display:none}
 `;
 
 /* ---- Built-in catalogue ----
@@ -326,7 +330,7 @@ function card(s){
 
   const author = s.author? `<div class="author">by ${esc(s.author)}</div>` : "";
   const rs=restingState(s);
-  return `<div class="card">
+  return `<div class="card" data-series="${escAttr(s.series)}">
     <div class="cover" style="${coverStyle(s.color)}">${coverInner(s,rs.book,rs.stacked,rs.count)}</div>
     <div class="card-body">
       <h3 class="series-name">${esc(s.series)}</h3>
@@ -341,6 +345,7 @@ function card(s){
       <div class="titles">${bookRows}</div>
       <div class="card-foot">
         <button class="add-all" ${avail?"":"disabled"}>${avail?"Add whole series to list":"Coming soon"}</button>
+        <button class="remove-all"${selectedBooks(s).length?"":" hidden"}>Remove all from list</button>
       </div>
     </div>
   </div>`;
@@ -397,14 +402,39 @@ function render(){
         });
       }
     });
-    cardEl.querySelectorAll(".add-btn").forEach(btn=>btn.addEventListener("click",()=>toggle(btn.dataset.key)));
+    cardEl.querySelectorAll(".add-btn").forEach(btn=>btn.addEventListener("click",()=>{
+      const key=btn.dataset.key; cart.has(key)?cart.delete(key):cart.add(key);
+      updateCart(); refreshCard(cardEl,s);
+    }));
     cardEl.querySelector(".add-all").addEventListener("click",()=>{
-      s.books.forEach(b=>cart.add(s.series+" :: "+b.title));
-      updateCart();render();
+      s.books.forEach(b=>cart.add(s.series+" :: "+b.title)); updateCart(); refreshCard(cardEl,s);
+    });
+    const rmAll=cardEl.querySelector(".remove-all");
+    if(rmAll)rmAll.addEventListener("click",()=>{
+      s.books.forEach(b=>cart.delete(s.series+" :: "+b.title)); updateCart(); refreshCard(cardEl,s);
     });
   });
 }
-function toggle(key){ cart.has(key)?cart.delete(key):cart.add(key); updateCart(); render(); }
+// Update one card's buttons + cover in place (so expanded series/blurbs don't collapse)
+function refreshCard(cardEl, s){
+  cardEl.querySelectorAll(".book").forEach(bookEl=>{
+    const on=cart.has(s.series+" :: "+bookEl.dataset.title);
+    bookEl.classList.toggle("sel", on);
+    const btn=bookEl.querySelector(".add-btn");
+    if(btn){ btn.classList.toggle("added", on); btn.textContent=on?"Added ✓":"+ Add"; }
+  });
+  const rm=cardEl.querySelector(".remove-all");
+  if(rm) rm.hidden = selectedBooks(s).length===0;
+  const coverEl=cardEl.querySelector(".cover");
+  if(coverEl){ const r=restingState(s); coverEl.innerHTML=coverInner(s,r.book,r.stacked,r.count); }
+}
+function refreshAllCards(){
+  [...grid.querySelectorAll(".card")].forEach(cardEl=>{
+    const s=BOOKS.find(x=>x.series===cardEl.dataset.series);
+    if(s) refreshCard(cardEl,s);
+  });
+}
+function toggle(key){ cart.has(key)?cart.delete(key):cart.add(key); updateCart(); refreshAllCards(); }
 
 const cartbar=document.getElementById("cartbar");
 function updateCart(){
@@ -419,7 +449,7 @@ function updateCart(){
   if(btn){ btn.disabled=over; btn.style.opacity=over?.55:1; btn.style.cursor=over?"not-allowed":"pointer";
     btn.title=over?`Remove ${n-MAX_BOOKS} book(s) to check out`:""; }
 }
-document.getElementById("btnClear").addEventListener("click",()=>{cart.clear();updateCart();render();});
+document.getElementById("btnClear").addEventListener("click",()=>{cart.clear();updateCart();refreshAllCards();});
 
 /* ===================== Checkout flow (Ordering process) =====================
    Implements process-flows.html Flow 1. See SYSTEM-DESIGN.md §5.
