@@ -16,7 +16,7 @@ const SHEET_CSV_URL   = "";
 /* Paste your Apps Script Web app URL (ends with /exec) to turn on accounts,
    live availability and real orders. Leave "" to fall back to a simple
    WhatsApp order message (no accounts) until the backend is deployed. */
-const API_URL         = "";
+const API_URL = "https://script.google.com/macros/s/AKfycbyVHxD4ZJXuUwvp8Q0q5JnMFCGmF2Rqwb2BwUJTjNaJyhq14pqXWwLP2_klILWRR2g/exec";
 const MAX_BOOKS       = 4;
 /* Payment QR shown at checkout. Put your DuitNow/Maybank QR image in this
    folder (and in the GitHub repo) named exactly payment-qr.png. */
