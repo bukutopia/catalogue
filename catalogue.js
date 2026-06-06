@@ -468,7 +468,11 @@ const CHECKOUT_CSS=`
 #coModal .co-tabs{display:flex;gap:8px;margin:2px 0 6px}
 #coModal .co-tab{flex:1;padding:9px;border:1px solid #e0d6c2;border-radius:9px;background:#fff;font:inherit;font-weight:700;color:#103160;cursor:pointer}
 #coModal .co-tab.on{background:#103160;color:#fff;border-color:#103160}
-#coModal .co-big{font-size:26px;font-weight:800;color:#103160;margin:2px 0}\n#coModal .co-confirm{background:#fff8e6;border:1px solid #f1d889;border-radius:9px;padding:11px 13px;font-size:13px;color:#5a4a2a;margin:10px 0 0;line-height:1.55}\n#coModal .co-confirm[hidden]{display:none}`;
+#coModal .co-big{font-size:26px;font-weight:800;color:#103160;margin:2px 0}\n#coModal .co-confirm{background:#fff8e6;border:1px solid #f1d889;border-radius:9px;padding:11px 13px;font-size:13px;color:#5a4a2a;margin:10px 0 0;line-height:1.55}\n#coModal .co-confirm[hidden]{display:none}
+#coModal .co-pick{display:flex;align-items:flex-start;gap:9px;padding:8px 0;border-bottom:1px dashed #eadfca;font-size:14px;color:#243447;cursor:pointer}
+#coModal .co-pick input{margin-top:3px;width:17px;height:17px;accent-color:#103160;flex:0 0 auto}
+#coModal .co-pickcount{font-size:13px;font-weight:700;color:#103160;margin:8px 0 0}
+#coModal .co-pickcount.over{color:#c0503a}`;
 
 const modalBg=document.getElementById("modalBg");
 const coModal=document.getElementById("coModal");
@@ -619,9 +623,49 @@ function stepAccount(){
       else res=await apiPub("signup",{name,whatsapp:phone,address:addr,passcode:pass});
       if(res.error){err.textContent=res.error;resetConfirm();return;}
       session={accountId:res.accountId,whatsapp:phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};
-      stepConfirm();
+      if(mode==="login" && res.pending && res.pending.length) startMerge(res.pending);
+      else stepConfirm();
     }catch(e){err.textContent="Couldn't connect. Please try again.";resetConfirm();}
   };
+}
+
+// Resolve a stored {isbn,title} to a full catalogue item (series + price from BOOKS)
+function resolveItem(isbn, title){
+  isbn=String(isbn||"");
+  for(const s of BOOKS){
+    if(!s.books) continue;
+    const b=s.books.find(bk=>(isbn&&bk.isbn===isbn)||(title&&bk.title===title));
+    if(b) return {key:s.series+" :: "+b.title, series:s.series, title:b.title, isbn:b.isbn||"", price:Number(s.price)||0};
+  }
+  return title?{key:title, series:"", title:title, isbn:isbn, price:0}:null;
+}
+// Returning customer with an unpaid pending order: combine its books with the new cart
+// and let them untick down to the max before continuing.
+function startMerge(pendingRaw){
+  const resolved=(pendingRaw||[]).map(p=>resolveItem(p.isbn,p.title)).filter(Boolean);
+  const map=new Map();
+  [...coItems, ...resolved].forEach(it=>{ if(!it)return; const k=it.isbn||it.title; if(!map.has(k))map.set(k,it); });
+  const combined=[...map.values()];
+  if(combined.length<=MAX_BOOKS){ coItems=combined; return stepConfirm(); }
+  stepChoose(combined);
+}
+function stepChoose(items){
+  function draw(){
+    const n=items.filter(it=>it._keep!==false).length;
+    const ok=n>=1 && n<=MAX_BOOKS;
+    const rows=items.map((it,i)=>`<label class="co-pick"><input type="checkbox" data-i="${i}" ${it._keep!==false?"checked":""}><span>${esc(it.title)} <span style="color:#9a8a72;font-weight:600">\u2014 ${esc(it.series)}</span></span></label>`).join("");
+    show(`<h3 class="co-h">Pick your final ${MAX_BOOKS} \ud83d\udcda</h3>
+      <p class="co-sub">You had an earlier order that wasn't paid yet, so we've combined both lists. Untick the books you don't want until you're down to ${MAX_BOOKS}.</p>
+      <div class="co-list">${rows}</div>
+      <div class="co-pickcount ${n>MAX_BOOKS?"over":""}">${n} of ${MAX_BOOKS} selected${n>MAX_BOOKS?" \u2014 untick "+(n-MAX_BOOKS)+" more":""}</div>
+      <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Back</button>
+        <button class="btn-wa" id="coNext" style="flex:1.4;justify-content:center" ${ok?"":"disabled"}>Next</button></div>`);
+    coModal.querySelectorAll("input[type=checkbox]").forEach(cb=>cb.onchange=()=>{ items[+cb.dataset.i]._keep=cb.checked; draw(); });
+    coModal.querySelector("#coBack").onclick=stepReview;
+    const nb=coModal.querySelector("#coNext");
+    nb.onclick=()=>{ if(!ok)return; coItems=items.filter(it=>it._keep!==false); stepConfirm(); };
+  }
+  draw();
 }
 
 function stepConfirm(){
