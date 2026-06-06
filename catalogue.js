@@ -333,7 +333,7 @@ function card(s){
   return `<div class="card" data-series="${escAttr(s.series)}">
     <div class="cover" style="${coverStyle(s.color)}">${coverInner(s,rs.book,rs.stacked,rs.count)}</div>
     <div class="card-body">
-      <h3 class="series-name">${esc(s.series)}</h3>
+      <h3 class="series-name">${esc((s.series&&String(s.series).trim())?s.series:((s.books&&s.books[0]&&s.books[0].title)||s.title||""))}</h3>
       <div class="meta">
         <span class="tag age">Ages ${esc(s.age)}</span>
         <span class="tag aud">${esc(s.audience)}</span>
@@ -882,8 +882,8 @@ function acSuggestions(){
   const out=[], seen=new Set();
   (BOOKS||[]).forEach(s=>{
     if(s.available===false) return;
-    const sk="s|"+s.series.toLowerCase();
-    if(!seen.has(sk)){ seen.add(sk); out.push({label:s.series, sub:s.author?("by "+s.author):"series", type:"series", q:s.series}); }
+    const sk="s|"+String(s.series||"").toLowerCase();
+    if(s.series&&String(s.series).trim()&&!seen.has(sk)){ seen.add(sk); out.push({label:s.series, sub:s.author?("by "+s.author):"series", type:"series", q:s.series}); }
     (s.books||[]).forEach(b=>{
       const tk="t|"+String(b.title).toLowerCase();
       if(!seen.has(tk)){ seen.add(tk); out.push({label:b.title, sub:s.series, type:"title", q:b.title}); }
