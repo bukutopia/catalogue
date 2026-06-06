@@ -446,8 +446,8 @@ function updateCart(){
     : `${n} ${n===1?"book":"books"} selected`;
   document.getElementById("cartTitles").textContent=[...cart].map(k=>k.split(" :: ")[1]).join(", ");
   const btn=document.getElementById("btnOrder");
-  if(btn){ btn.disabled=over; btn.style.opacity=over?.55:1; btn.style.cursor=over?"not-allowed":"pointer";
-    btn.title=over?`Remove ${n-MAX_BOOKS} book(s) to check out`:""; }
+  if(btn){ btn.disabled=false; btn.style.opacity=1; btn.style.cursor="pointer";
+    btn.title=over?`Tap to trim to ${MAX_BOOKS} books`:""; }
   const badge=document.getElementById("navCartCount");
   if(badge){ badge.textContent=n; badge.hidden = n===0; }
 }
@@ -503,14 +503,32 @@ async function apiPub(action,payload){
 }
 function show(html){coModal.innerHTML=html;modalBg.classList.add("show");}
 
+function stepTrimCart(){
+  function draw(){
+    const n=cart.size, ok=n>=1&&n<=MAX_BOOKS;
+    const rows=[...cart].map(key=>{
+      const [series,title]=key.split(" :: ");
+      return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed #eadfca">
+        <span style="font-size:14px;color:#243447;font-weight:600">${esc(title)} <span style="color:#9a8a72;font-weight:500">\u2014 ${esc(series)}</span></span>
+        <button class="co-trim-x" data-key="${escAttr(key)}" aria-label="Remove" style="flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:1.5px solid #e9c4bb;background:#fff;color:#c0503a;font-size:18px;font-weight:800;cursor:pointer;line-height:1">\u00d7</button>
+      </div>`;
+    }).join("");
+    show(`<h3 class="co-h">Your rental list</h3>
+      <p class="co-sub">You've picked ${n} book${n===1?"":"s"}. Rentals are up to ${MAX_BOOKS} per registered name \u2014 tap \u00d7 to remove the ones you don't want.</p>
+      <div class="co-list">${rows}</div>
+      <div class="co-pickcount ${n>MAX_BOOKS?"over":""}">${n} of ${MAX_BOOKS} selected${n>MAX_BOOKS?" \u2014 remove "+(n-MAX_BOOKS)+" more":""}</div>
+      <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Keep browsing</button>
+        <button class="btn-wa" id="coNext" style="flex:1.4;justify-content:center" ${ok?"":"disabled"}>Check out</button></div>`);
+    coModal.querySelectorAll(".co-trim-x").forEach(b=>b.onclick=()=>{ cart.delete(b.dataset.key); updateCart(); refreshAllCards(); if(cart.size===0){closeCheckout();return;} draw(); });
+    coModal.querySelector("#coBack").onclick=closeCheckout;
+    const nb=coModal.querySelector("#coNext");
+    nb.onclick=()=>{ if(cart.size<1||cart.size>MAX_BOOKS)return; coItems=cartItems(); if(!API_URL){legacyWhatsApp();return;} stepReview(); };
+  }
+  draw();
+}
 function openCheckout(){
   if(cart.size===0)return;
-  if(cart.size>MAX_BOOKS){
-    show(`<h3 class="co-h">Just a little too many 📚</h3>
-      <p class="co-sub">You've picked ${cart.size} books. Rentals are up to ${MAX_BOOKS} books per registered name — please remove ${cart.size-MAX_BOOKS} to check out.</p>
-      <div class="co-row"><button class="btn-wa" id="coClose" style="flex:1;justify-content:center">Back to my list</button></div>`);
-    coModal.querySelector("#coClose").onclick=closeCheckout; return;
-  }
+  if(cart.size>MAX_BOOKS){ stepTrimCart(); return; }
   coItems=cartItems();
   if(!API_URL){legacyWhatsApp();return;}
   stepReview();
