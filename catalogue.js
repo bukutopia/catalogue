@@ -857,6 +857,81 @@ async function myAccountPanel(){
   });
 }
 
+/* ===================== Search autocomplete ===================== */
+const AC_CSS = `
+.search .ac-list{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;border:1px solid #e0d6c2;border-radius:12px;
+  box-shadow:0 14px 30px rgba(16,49,96,.18);max-height:330px;overflow:auto;z-index:55;display:none;padding:5px}
+.search .ac-list.on{display:block}
+.ac-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:9px;cursor:pointer;font-size:14px;color:#243447}
+.ac-item.active,.ac-item:hover{background:#f3efe4}
+.ac-ico{font-size:15px;flex:0 0 auto;line-height:1}
+.ac-main{flex:1;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#103160}
+.ac-main b{color:#e9755c}
+.ac-sub{color:#9a8a72;font-size:12px;font-weight:600;white-space:nowrap;flex:0 0 auto;max-width:44%;overflow:hidden;text-overflow:ellipsis}
+.ac-empty{padding:12px 12px;color:#9a8a72;font-size:13px}`;
+
+function acHighlight(text,q){
+  const t=String(text);
+  if(!q) return esc(t);
+  const i=t.toLowerCase().indexOf(q.toLowerCase());
+  if(i<0) return esc(t);
+  return esc(t.slice(0,i))+"<b>"+esc(t.slice(i,i+q.length))+"</b>"+esc(t.slice(i+q.length));
+}
+// Suggestions built from AVAILABLE series + titles only (skips "Coming soon").
+function acSuggestions(){
+  const out=[], seen=new Set();
+  (BOOKS||[]).forEach(s=>{
+    if(s.available===false) return;
+    const sk="s|"+s.series.toLowerCase();
+    if(!seen.has(sk)){ seen.add(sk); out.push({label:s.series, sub:s.author?("by "+s.author):"series", type:"series", q:s.series}); }
+    (s.books||[]).forEach(b=>{
+      const tk="t|"+String(b.title).toLowerCase();
+      if(!seen.has(tk)){ seen.add(tk); out.push({label:b.title, sub:s.series, type:"title", q:b.title}); }
+    });
+  });
+  return out;
+}
+function setupAutocomplete(){
+  const input=document.getElementById("search");
+  if(!input) return;
+  const wrap=input.closest(".search")||input.parentElement;
+  if(!wrap) return;
+  let list=document.getElementById("acList");
+  if(!list){ list=document.createElement("div"); list.id="acList"; list.className="ac-list"; list.setAttribute("role","listbox"); wrap.appendChild(list); }
+  let items=[], active=-1, all=acSuggestions();
+  function close(){ list.classList.remove("on"); list.innerHTML=""; items=[]; active=-1; }
+  function paintActive(){ [...list.querySelectorAll(".ac-item")].forEach((el,i)=>el.classList.toggle("active",i===active)); const el=list.querySelectorAll(".ac-item")[active]; if(el)el.scrollIntoView({block:"nearest"}); }
+  function choose(i){ const m=items[i]; if(!m)return; input.value=m.q; close(); render(); const b=document.getElementById("books"); if(b)b.scrollIntoView({behavior:"smooth",block:"start"}); }
+  function refresh(){
+    const q=input.value.trim().toLowerCase();
+    if(q.length<1){ close(); return; }
+    if(!all.length) all=acSuggestions();
+    const starts=[], contains=[];
+    for(const s of all){
+      const l=s.label.toLowerCase();
+      if(l.startsWith(q)) starts.push(s);
+      else if(l.includes(q)||s.sub.toLowerCase().includes(q)) contains.push(s);
+      if(starts.length+contains.length>60) break;
+    }
+    items=starts.concat(contains).slice(0,8);
+    if(!items.length){ close(); return; }
+    list.innerHTML=items.map((m,i)=>`<div class="ac-item" role="option" data-i="${i}"><span class="ac-ico">${m.type==="series"?"\u{1F4DA}":"\u{1F4D6}"}</span><span class="ac-main">${acHighlight(m.label,input.value.trim())}</span><span class="ac-sub">${esc(m.sub)}</span></div>`).join("");
+    list.classList.add("on"); active=-1;
+    list.querySelectorAll(".ac-item").forEach(el=>el.addEventListener("mousedown",e=>{ e.preventDefault(); choose(+el.dataset.i); }));
+  }
+  input.addEventListener("input",refresh);
+  input.addEventListener("focus",()=>{ if(input.value.trim())refresh(); });
+  input.addEventListener("keydown",e=>{
+    if(!list.classList.contains("on")) return;
+    if(e.key==="ArrowDown"){ e.preventDefault(); active=Math.min(active+1,items.length-1); paintActive(); }
+    else if(e.key==="ArrowUp"){ e.preventDefault(); active=Math.max(active-1,0); paintActive(); }
+    else if(e.key==="Enter"){ if(active>=0){ e.preventDefault(); choose(active); } }
+    else if(e.key==="Escape"){ close(); }
+  });
+  document.addEventListener("click",e=>{ if(!wrap.contains(e.target)) close(); });
+  setupAutocomplete.refreshSource=()=>{ all=acSuggestions(); };
+}
+
 function buildFilters(){
   const ages=[...new Set(BOOKS.map(s=>s.age))].sort((a,b)=>parseInt(a)-parseInt(b));
   const auds=[...new Set(BOOKS.map(s=>s.audience))].filter(a=>a!=="Everyone").sort();
@@ -871,7 +946,7 @@ async function loadPublicSettings(){
     if(d&&d.settings)PUBLIC_SETTINGS=Object.assign(PUBLIC_SETTINGS,d.settings);}catch(e){}
 }
 async function init(){
-  document.head.insertAdjacentHTML("beforeend","<style>"+PILOT_CSS+CHECKOUT_CSS+"</style>");
+  document.head.insertAdjacentHTML("beforeend","<style>"+PILOT_CSS+CHECKOUT_CSS+AC_CSS+"</style>");
   loadPublicSettings();
   const note=document.getElementById("srcnote");
   if(SHEET_CSV_URL){
@@ -883,6 +958,7 @@ async function init(){
     }catch(e){BOOKS=normalize(DEFAULT_BOOKS);note.textContent="Showing built-in catalogue.";}
   }else{BOOKS=normalize(DEFAULT_BOOKS);}
   buildFilters();render();updateCart();updateNavAuth();
+  setupAutocomplete();
 }
 ["search","age","aud","avail"].forEach(id=>document.getElementById(id).addEventListener("input",render));
 init();
