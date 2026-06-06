@@ -203,6 +203,10 @@ const DEFAULT_BOOKS = [
 /* ============================================================ */
 let BOOKS = [];
 const cart = new Set();
+function saveCart(){try{localStorage.setItem("bk_cart",JSON.stringify([...cart]));}catch(e){}}
+function loadCart(){try{const a=JSON.parse(localStorage.getItem("bk_cart")||"[]");if(Array.isArray(a)){const valid=new Set();(BOOKS||[]).forEach(x=>(x.books||[]).forEach(b=>valid.add(x.series+" :: "+b.title)));a.forEach(k=>{if(valid.has(k))cart.add(k);});}}catch(e){}}
+function saveSession(){try{session?localStorage.setItem("bk_session",JSON.stringify(session)):localStorage.removeItem("bk_session");}catch(e){}}
+function loadSession(){try{const x=JSON.parse(localStorage.getItem("bk_session")||"null");if(x&&x.whatsapp)session=x;}catch(e){}}
 const stickyCover = {};   // series name -> clicked title (the locked cover)
 
 function normalize(list){
@@ -450,6 +454,7 @@ function updateCart(){
     btn.title=over?`Tap to trim to ${MAX_BOOKS} books`:""; }
   const badge=document.getElementById("navCartCount");
   if(badge){ badge.textContent=n; badge.hidden = n===0; }
+  saveCart();
 }
 document.getElementById("btnClear").addEventListener("click",()=>{cart.clear();updateCart();refreshAllCards();});
 
@@ -642,7 +647,7 @@ function stepAccount(){
       if(mode==="login") res=await apiPub("login",{whatsapp:phone,passcode:pass});
       else res=await apiPub("signup",{name,whatsapp:phone,address:addr,passcode:pass});
       if(res.error){err.textContent=res.error;resetConfirm();return;}
-      session={accountId:res.accountId,whatsapp:phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};
+      session={accountId:res.accountId,whatsapp:phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};saveSession();
       updateNavAuth();
       if(mode==="login" && res.pending && res.pending.length) startMerge(res.pending);
       else stepConfirm();
@@ -811,7 +816,7 @@ function accountForm(onSuccess){
         ? await apiPub("login",{whatsapp:phone,passcode:pass})
         : await apiPub("signup",{name,whatsapp:phone,address:addr,passcode:pass});
       if(res.error){err.textContent=res.error;return;}
-      session={accountId:res.accountId,whatsapp:phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};
+      session={accountId:res.accountId,whatsapp:phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};saveSession();
       onSuccess();
     }catch(e){err.textContent="Couldn't connect. Please try again.";}
   };
@@ -868,7 +873,7 @@ async function myAccountPanel(){
     <div class="co-row"><button class="btn-clear" id="coLogout" style="flex:1">Log out</button>
       <button class="btn-wa" id="coClose" style="flex:1.4;justify-content:center">Done</button></div>`);
   coModal.querySelector("#coClose").onclick=closeCheckout;
-  coModal.querySelector("#coLogout").onclick=()=>{ session=null; updateNavAuth(); closeCheckout(); };
+  coModal.querySelector("#coLogout").onclick=()=>{ session=null; saveSession(); updateNavAuth(); closeCheckout(); };
   coModal.querySelectorAll(".pay-again").forEach(b=>b.onclick=()=>{
     const o=orders.find(x=>String(x.id)===b.dataset.id);
     if(o) stepPay({id:o.id,titles:o.titles,amount:o.amount,type:o.type});
@@ -975,7 +980,7 @@ async function init(){
       else throw new Error("empty");
     }catch(e){BOOKS=normalize(DEFAULT_BOOKS);note.textContent="Showing built-in catalogue.";}
   }else{BOOKS=normalize(DEFAULT_BOOKS);}
-  buildFilters();render();updateCart();updateNavAuth();
+  loadSession();loadCart();buildFilters();render();updateCart();updateNavAuth();
   setupAutocomplete();
 }
 ["search","age","aud","avail"].forEach(id=>document.getElementById(id).addEventListener("input",render));
