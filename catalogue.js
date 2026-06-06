@@ -448,6 +448,8 @@ function updateCart(){
   const btn=document.getElementById("btnOrder");
   if(btn){ btn.disabled=over; btn.style.opacity=over?.55:1; btn.style.cursor=over?"not-allowed":"pointer";
     btn.title=over?`Remove ${n-MAX_BOOKS} book(s) to check out`:""; }
+  const badge=document.getElementById("navCartCount");
+  if(badge){ badge.textContent=n; badge.hidden = n===0; }
 }
 document.getElementById("btnClear").addEventListener("click",()=>{cart.clear();updateCart();refreshAllCards();});
 
@@ -623,6 +625,7 @@ function stepAccount(){
       else res=await apiPub("signup",{name,whatsapp:phone,address:addr,passcode:pass});
       if(res.error){err.textContent=res.error;resetConfirm();return;}
       session={accountId:res.accountId,whatsapp:phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};
+      updateNavAuth();
       if(mode==="login" && res.pending && res.pending.length) startMerge(res.pending);
       else stepConfirm();
     }catch(e){err.textContent="Couldn't connect. Please try again.";resetConfirm();}
@@ -720,6 +723,140 @@ function stepPay(order){
   coModal.querySelector("#coWa").onclick=()=>{setTimeout(closeCheckout,400);};
 }
 
+/* ===================== Top nav: Rental cart + Login / My account ===================== */
+const navCart=document.getElementById("navCart");
+const navLogin=document.getElementById("navLogin");
+
+function updateNavAuth(){
+  if(!navLogin)return;
+  if(session){ navLogin.textContent="👤 "+(session.name?String(session.name).split(" ")[0]:"My account"); navLogin.classList.add("me"); }
+  else { navLogin.textContent="Login"; navLogin.classList.remove("me"); }
+}
+if(navCart) navCart.addEventListener("click",e=>{e.preventDefault();openCart();});
+if(navLogin) navLogin.addEventListener("click",e=>{e.preventDefault();openAccount();});
+
+// Rental cart link → open checkout (or a friendly empty state).
+function openCart(){
+  if(cart.size===0){
+    show(`<h3 class="co-h">Your rental cart is empty 🛒</h3>
+      <p class="co-sub">Browse the collection and tap <b>Add</b> on up to ${MAX_BOOKS} books, then come back here to check out.</p>
+      <div class="co-row"><button class="btn-wa" id="coClose" style="flex:1;justify-content:center">Browse books</button></div>`);
+    coModal.querySelector("#coClose").onclick=()=>{closeCheckout();location.hash="#books";};
+    return;
+  }
+  openCheckout();
+}
+
+// Login link → My account if signed in, else the login/signup form.
+function openAccount(){
+  if(!API_URL){
+    show(`<h3 class="co-h">Accounts coming soon</h3>
+      <p class="co-sub">Online accounts aren't switched on yet. For now, add your books and order on WhatsApp.</p>
+      <div class="co-row"><button class="btn-wa" id="coClose" style="flex:1;justify-content:center">OK</button></div>`);
+    coModal.querySelector("#coClose").onclick=closeCheckout; return;
+  }
+  if(session) return myAccountPanel();
+  accountForm(()=>{ updateNavAuth(); myAccountPanel(); });
+}
+
+// Standalone login/signup form (separate from the checkout copy so either can change freely).
+function accountForm(onSuccess){
+  show(`<h3 class="co-h">Your account</h3>
+    <p class="co-sub">Log in to see your orders, or create an account.</p>
+    <div class="co-tabs"><button class="co-tab on" id="tabLogin">I have an account</button>
+      <button class="co-tab" id="tabSignup">Create account</button></div>
+    <div id="coForm"></div><div class="co-err" id="coErr"></div>
+    <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Close</button>
+      <button class="btn-wa" id="coGo" style="flex:1.4;justify-content:center">Continue</button></div>`);
+  let mode="login";
+  const form=coModal.querySelector("#coForm"), err=coModal.querySelector("#coErr");
+  const loginForm=`<label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789">
+    <label>Passcode</label><input id="f_pass" type="password" placeholder="Your passcode">`;
+  const signupForm=`<label>Your name</label><input id="f_name" placeholder="Full name">
+    <label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789">
+    <label>Delivery address</label><input id="f_addr" placeholder="Unit, street, postcode">
+    <label>Choose a passcode</label><input id="f_pass" type="password" placeholder="At least 4 characters">`;
+  function paint(){form.innerHTML=mode==="login"?loginForm:signupForm;err.textContent="";}
+  paint();
+  coModal.querySelector("#tabLogin").onclick=()=>{mode="login";coModal.querySelector("#tabLogin").classList.add("on");coModal.querySelector("#tabSignup").classList.remove("on");paint();};
+  coModal.querySelector("#tabSignup").onclick=()=>{mode="signup";coModal.querySelector("#tabSignup").classList.add("on");coModal.querySelector("#tabLogin").classList.remove("on");paint();};
+  coModal.querySelector("#coBack").onclick=closeCheckout;
+  coModal.querySelector("#coGo").onclick=async()=>{
+    const g=id=>{const el=coModal.querySelector(id);return el?el.value.trim():"";};
+    const phone=g("#f_phone"), pass=g("#f_pass");
+    const name=mode==="signup"?g("#f_name"):"", addr=mode==="signup"?g("#f_addr"):"";
+    if(!phone||!pass){err.textContent="Please fill in your number and passcode.";return;}
+    if(mode==="signup"&&(!name||!addr)){err.textContent="Please fill in your name and delivery address.";return;}
+    err.textContent="Please wait…";
+    try{
+      const res = mode==="login"
+        ? await apiPub("login",{whatsapp:phone,passcode:pass})
+        : await apiPub("signup",{name,whatsapp:phone,address:addr,passcode:pass});
+      if(res.error){err.textContent=res.error;return;}
+      session={accountId:res.accountId,whatsapp:phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};
+      onSuccess();
+    }catch(e){err.textContent="Couldn't connect. Please try again.";}
+  };
+}
+
+function statusBadge(o){
+  const s=o.status, paid=String(o.paymentStatus)==="Confirmed";
+  let bg="#eef2f7",fg="#5a6b7a",label=s;
+  if(s==="Pending payment"){ bg="#fff3d6"; fg="#8a6d1e"; label=paid?"Paid — processing":"Awaiting payment"; }
+  else if(s==="Paid"||s==="Packed"){ bg="#dceaff"; fg="#1c4b8a"; }
+  else if(s==="Out"||s==="Extended"){ bg="#d9f2e2"; fg="#1d6b3e"; }
+  else if(s==="Returned"){ bg="#e7e0f4"; fg="#5a3f8a"; }
+  else if(s==="Cancelled"||s==="Lost/Damaged"){ bg="#f4e0e0"; fg="#9a3a3a"; }
+  return `<span style="background:${bg};color:${fg};font-weight:800;font-size:11.5px;padding:3px 9px;border-radius:999px;white-space:nowrap">${esc(label)}</span>`;
+}
+
+function fmtDate(d,withTime){
+  try{ const dt=new Date(d); if(isNaN(dt))return String(d);
+    const o={year:"numeric",month:"short",day:"numeric"}; if(withTime){o.hour="2-digit";o.minute="2-digit";}
+    return dt.toLocaleDateString(undefined,o);
+  }catch(e){return String(d);}
+}
+
+// "My account" — the customer's orders and their live status.
+async function myAccountPanel(){
+  show(`<h3 class="co-h">Hi ${esc(session.name||"there")} 👋</h3><p class="co-sub">Loading your orders…</p>`);
+  let res={};
+  try{ res=await apiPub("myOrders",{whatsapp:session.whatsapp,passcode:session.passcode}); }
+  catch(e){ res={error:"network"}; }
+  const orders=res.orders||[];
+  const active=orders.filter(o=>o.status!=="Cancelled");
+  let listHtml;
+  if(res.error){ listHtml=`<p class="co-sub">We couldn't load your orders just now. Please try again in a moment.</p>`; }
+  else if(active.length===0){ listHtml=`<div class="co-note">You have no orders yet. Add up to ${MAX_BOOKS} books and check out to get started. 📚</div>`; }
+  else {
+    listHtml=active.map(o=>{
+      const ref=String(o.id).slice(0,8).toUpperCase();
+      const pendingUnpaid=o.status==="Pending payment" && String(o.paymentStatus)!=="Confirmed";
+      const meta=(o.status==="Out"||o.status==="Extended")
+        ? (o.dueDate?`Due back ${fmtDate(o.dueDate)}`:"")
+        : pendingUnpaid ? `Pay ${money(o.amount)} within 24h${o.expiresAt?" · by "+fmtDate(o.expiresAt,true):""}` : "";
+      return `<div class="co-li" style="display:block">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <b style="color:#103160">#${ref}</b> ${statusBadge(o)}</div>
+        <div style="margin:3px 0 0">${esc(o.titles||"")}</div>
+        ${meta?`<div style="color:#7c879b;font-size:12.5px;margin-top:2px">${esc(meta)}</div>`:""}
+        ${pendingUnpaid?`<button class="btn-wa pay-again" data-id="${o.id}" style="margin-top:7px;padding:7px 12px;font-size:12.5px;justify-content:center">Pay / send receipt</button>`:""}
+      </div>`;
+    }).join("");
+  }
+  show(`<h3 class="co-h">Hi ${esc(session.name||"there")} 👋</h3>
+    <p class="co-sub">${active.length?`Your ${active.length} order(s):`:"Your account"}</p>
+    <div class="co-list">${listHtml}</div>
+    <div class="co-row"><button class="btn-clear" id="coLogout" style="flex:1">Log out</button>
+      <button class="btn-wa" id="coClose" style="flex:1.4;justify-content:center">Done</button></div>`);
+  coModal.querySelector("#coClose").onclick=closeCheckout;
+  coModal.querySelector("#coLogout").onclick=()=>{ session=null; updateNavAuth(); closeCheckout(); };
+  coModal.querySelectorAll(".pay-again").forEach(b=>b.onclick=()=>{
+    const o=orders.find(x=>String(x.id)===b.dataset.id);
+    if(o) stepPay({id:o.id,titles:o.titles,amount:o.amount,type:o.type});
+  });
+}
+
 function buildFilters(){
   const ages=[...new Set(BOOKS.map(s=>s.age))].sort((a,b)=>parseInt(a)-parseInt(b));
   const auds=[...new Set(BOOKS.map(s=>s.audience))].filter(a=>a!=="Everyone").sort();
@@ -745,7 +882,7 @@ async function init(){
       else throw new Error("empty");
     }catch(e){BOOKS=normalize(DEFAULT_BOOKS);note.textContent="Showing built-in catalogue.";}
   }else{BOOKS=normalize(DEFAULT_BOOKS);}
-  buildFilters();render();updateCart();
+  buildFilters();render();updateCart();updateNavAuth();
 }
 ["search","age","aud","avail"].forEach(id=>document.getElementById(id).addEventListener("input",render));
 init();

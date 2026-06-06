@@ -151,6 +151,15 @@
   .topnav nav a{text-decoration:none;font-weight:800;font-size:13.5px;color:var(--navy-soft);padding:7px 11px;border-radius:9px}
   .topnav nav a:hover{background:var(--mint)}
   .navwa{background:#25D366;color:#fff;text-decoration:none;font-weight:800;font-size:13px;padding:8px 13px;border-radius:10px}
+  .navact{display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-weight:800;font-size:13px;color:var(--navy);
+    background:#fff;border:1.5px solid var(--line);padding:7px 13px;border-radius:999px;cursor:pointer;white-space:nowrap;transition:.15s}
+  .navact:hover{border-color:var(--coral);color:var(--coral-dark)}
+  .navact.cart{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .navact.cart:hover{background:#0c264c;color:#fff}
+  .nav-badge{background:var(--yellow);color:var(--navy);font-weight:900;font-size:11.5px;min-width:18px;height:18px;
+    display:inline-flex;align-items:center;justify-content:center;padding:0 5px;border-radius:999px}
+  .nav-badge[hidden]{display:none}
+  .navact.me{background:var(--mint);border-color:var(--mint);color:var(--navy)}
   .controls{position:static !important}
   .hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:22px;position:relative;z-index:1}
   .hbtn{display:inline-flex;align-items:center;gap:8px;border:none;font-family:inherit;font-weight:800;font-size:15px;border-radius:14px;padding:12px 20px;cursor:pointer;text-decoration:none}
@@ -196,6 +205,8 @@
 <div class="topnav"><div class="nwrap">
   <a href="#top" class="brand">buku<span class="t">topia</span></a>
   <nav><a href="#how">How it works</a><a href="#books">Browse &amp; Order books</a><a href="#faq">FAQ</a></nav>
+  <a href="#" class="navact cart" id="navCart" role="button">🛒 Rental cart <span class="nav-badge" id="navCartCount" hidden>0</span></a>
+  <a href="#" class="navact" id="navLogin" role="button">Login</a>
 </div></div>
 <header id="top">
   <svg class="fl deco d1"><use href="#sprig"/></svg>
