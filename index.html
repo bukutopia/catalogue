@@ -167,6 +167,11 @@
   .nav-toggle[aria-expanded="true"] span:nth-child(1){transform:translateY(7.5px) rotate(45deg)}
   .nav-toggle[aria-expanded="true"] span:nth-child(2){opacity:0}
   .nav-toggle[aria-expanded="true"] span:nth-child(3){transform:translateY(-7.5px) rotate(-45deg)}
+  .nav-icon{display:none;position:relative;align-items:center;justify-content:center;width:40px;height:38px;
+    border-radius:11px;border:1.5px solid var(--line);background:#fff;text-decoration:none;font-size:17px;line-height:1;cursor:pointer}
+  .nav-icon.cart{background:var(--navy);border-color:var(--navy)}
+  .nav-icon.me{background:var(--mint);border-color:var(--mint)}
+  .nav-icon .icon-badge{position:absolute;top:-6px;right:-6px;min-width:17px;height:17px;font-size:10.5px;padding:0 4px;box-shadow:var(--shadow-sm)}
   @media(max-width:720px){
     .topnav .nwrap{flex-wrap:nowrap;justify-content:space-between}
     .nav-toggle{display:flex}
@@ -178,6 +183,10 @@
     .topnav nav a{padding:11px 12px;font-size:15px;border-radius:10px}
     .navact{width:100%;justify-content:center;font-size:14.5px;padding:11px 14px}
     .navact.cart{order:-1}
+    .topnav .nwrap{gap:8px}
+    .nav-icon{display:inline-flex}
+    .nav-icon.cart{margin-left:auto}
+    .nav-toggle{margin-left:0}
   }
   .controls{position:static !important}
   .hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:22px;position:relative;z-index:1}
@@ -223,12 +232,14 @@
 
 <div class="topnav"><div class="nwrap">
   <a href="#top" class="brand">buku<span class="t">topia</span></a>
-  <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
   <div class="nav-menu" id="navMenu">
     <nav><a href="#how">How it works</a><a href="#books">Browse &amp; Order books</a><a href="#faq">FAQ</a></nav>
     <a href="#" class="navact cart" id="navCart" role="button">🛒 Rental cart <span class="nav-badge" id="navCartCount" hidden>0</span></a>
     <a href="#" class="navact" id="navLogin" role="button">Login</a>
   </div>
+  <a href="#" class="nav-icon cart" id="navCartIcon" role="button" aria-label="Rental cart">🛒<span class="nav-badge icon-badge" id="navCartCountIcon" hidden>0</span></a>
+  <a href="#" class="nav-icon" id="navLoginIcon" role="button" aria-label="Login">👤</a>
+  <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
 </div></div>
 <header id="top">
   <svg class="fl deco d1"><use href="#sprig"/></svg>
@@ -349,6 +360,22 @@
     document.addEventListener("click",function(e){
       if(m.classList.contains("open") && !m.contains(e.target) && e.target!==t && !t.contains(e.target)) close();
     });
+  })();
+  // Mobile cart + login icons proxy the menu buttons and mirror their state
+  (function(){
+    var cartIcon=document.getElementById("navCartIcon"),
+        loginIcon=document.getElementById("navLoginIcon"),
+        navCart=document.getElementById("navCart"),
+        navLogin=document.getElementById("navLogin"),
+        srcBadge=document.getElementById("navCartCount"),
+        iconBadge=document.getElementById("navCartCountIcon");
+    if(cartIcon&&navCart) cartIcon.addEventListener("click",function(e){e.preventDefault();navCart.click();});
+    if(loginIcon&&navLogin) loginIcon.addEventListener("click",function(e){e.preventDefault();navLogin.click();});
+    function syncBadge(){ if(!srcBadge||!iconBadge)return; iconBadge.textContent=srcBadge.textContent; iconBadge.hidden=srcBadge.hidden; }
+    function syncLogin(){ if(!navLogin||!loginIcon)return; loginIcon.classList.toggle("me", navLogin.classList.contains("me")); }
+    if(srcBadge) new MutationObserver(syncBadge).observe(srcBadge,{attributes:true,childList:true,characterData:true,subtree:true});
+    if(navLogin) new MutationObserver(syncLogin).observe(navLogin,{attributes:true,attributeFilter:["class"]});
+    syncBadge(); syncLogin();
   })();
 </script>
 <script src="catalogue.js?v=2"></script>
