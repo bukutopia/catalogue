@@ -320,15 +320,16 @@ function card(s){
   const avail = s.available!==false;
   const bookRows = s.books.map(b=>{
     const key=s.series+" :: "+b.title;
+    const bAvail=(s.available!==false)&&(b.available!==false);
     const on=cart.has(key);
-    const lbl=on?"Added ✓":"+ Add";
+    const lbl=!bAvail?"Unavailable":(on?"Added ✓":"+ Add");
     const titleEl = b.desc
       ? `<button class="book-toggle"><span class="car">▸</span>${esc(b.title)}</button>`
       : `<span class="book-title">${esc(b.title)}</span>`;
     const descEl = b.desc ? `<div class="book-desc">${esc(b.desc)}</div>` : "";
     return `<div class="book${on?' sel':''}" data-title="${escAttr(b.title)}">
       <div class="book-row">${titleEl}
-        <button class="add-btn${on?' added':''}" data-key="${escAttr(key)}" ${avail?"":"disabled"}>${lbl}</button>
+        <button class="add-btn${on?' added':''}" data-key="${escAttr(key)}" ${bAvail?"":"disabled"}>${lbl}</button>
       </div>${descEl}</div>`;
   }).join("");
 
@@ -347,10 +348,6 @@ function card(s){
       <p class="desc">${esc(s.desc)}</p>
       <button class="titles-toggle">▸ See ${s.books.length} ${s.books.length===1?"title":"titles"}</button>
       <div class="titles">${bookRows}</div>
-      <div class="card-foot">
-        <button class="add-all" ${avail?"":"disabled"}>${avail?"Add whole series to list":"Coming soon"}</button>
-        <button class="remove-all"${selectedBooks(s).length?"":" hidden"}>Remove all from list</button>
-      </div>
     </div>
   </div>`;
 }
@@ -410,9 +407,6 @@ function render(){
       const key=btn.dataset.key; cart.has(key)?cart.delete(key):cart.add(key);
       updateCart(); refreshCard(cardEl,s);
     }));
-    cardEl.querySelector(".add-all").addEventListener("click",()=>{
-      s.books.forEach(b=>cart.add(s.series+" :: "+b.title)); updateCart(); refreshCard(cardEl,s);
-    });
     const rmAll=cardEl.querySelector(".remove-all");
     if(rmAll)rmAll.addEventListener("click",()=>{
       s.books.forEach(b=>cart.delete(s.series+" :: "+b.title)); updateCart(); refreshCard(cardEl,s);
@@ -424,8 +418,9 @@ function refreshCard(cardEl, s){
   cardEl.querySelectorAll(".book").forEach(bookEl=>{
     const on=cart.has(s.series+" :: "+bookEl.dataset.title);
     bookEl.classList.toggle("sel", on);
+    const bk=(s.books||[]).find(x=>x.title===bookEl.dataset.title)||{};
     const btn=bookEl.querySelector(".add-btn");
-    if(btn){ btn.classList.toggle("added", on); btn.textContent=on?"Added ✓":"+ Add"; }
+    if(btn){ const bAvail=(s.available!==false)&&(bk.available!==false); btn.disabled=!bAvail; btn.classList.toggle("added", on&&bAvail); btn.textContent=!bAvail?"Unavailable":(on?"Added ✓":"+ Add"); }
   });
   const rm=cardEl.querySelector(".remove-all");
   if(rm) rm.hidden = selectedBooks(s).length===0;
@@ -563,8 +558,16 @@ function stepReview(){
   coModal.querySelector("#coNext").onclick=stepAvailability;
 }
 
+function markBookUnavailable(isbn,key){
+  const title=key?String(key).split(" :: ")[1]:"";
+  for(const s of (BOOKS||[])){ if(!s.books)continue;
+    const b=s.books.find(x=>(isbn&&String(x.isbn)===String(isbn))||(title&&x.title===title));
+    if(b){ b.available=false; cart.delete(s.series+" :: "+b.title); break; }
+  }
+  updateCart();
+}
 async function stepAvailability(){
-  show(`<h3 class="co-h">Checking availability…</h3><p class="co-sub">One moment please.</p>`);
+  show(`<h3 class="co-h">Processing Order</h3><p class="co-sub">One moment please.</p>`);
   const isbns=coItems.map(it=>it.isbn).filter(Boolean);
   let res={};
   try{ res = isbns.length? await apiPub("checkAvailability",{isbns}) : {ok:true,unavailable:[]}; }
@@ -583,19 +586,20 @@ async function stepAvailability(){
     removed.forEach(it=>cart.delete(it.key));
     coItems=coItems.filter(it=>!un.has(it.isbn));
     updateCart();render();
-    if(coItems.length===0){
-      show(`<h3 class="co-h">Those have just gone out 😢</h3>
-        <p class="co-sub">Sorry, ${removed.map(r=>esc(r.title)).join(", ")} ${removed.length>1?"are":"is"} no longer available. Please pick something else.</p>
-        <div class="co-row"><button class="btn-wa" id="coClose" style="flex:1;justify-content:center">Back to catalogue</button></div>`);
-      coModal.querySelector("#coClose").onclick=closeCheckout; return;
-    }
-    show(`<h3 class="co-h">A couple just went out</h3>
-      <p class="co-sub">We removed: ${removed.map(r=>esc(r.title)).join(", ")}. The rest are available — continue with these ${coItems.length}?</p>
-      <div class="co-list">${liRows()}</div>
-      <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Edit list</button>
-      <button class="btn-wa" id="coNext" style="flex:1.4;justify-content:center">Continue</button></div>`);
-    coModal.querySelector("#coBack").onclick=closeCheckout;
-    coModal.querySelector("#coNext").onclick=stepAccount; return;
+    const rows=removed.map(it=>`<div class="co-unavail">
+      <div class="co-unavail-info"><span class="co-unavail-title">${esc(it.title)}</span>
+        <span class="co-unavail-msg">Uh oh, someone ordered this book moments before you. Please select another book.</span></div>
+      <button class="co-unavail-swap" title="Pick a replacement" data-isbn="${escAttr(it.isbn)}" data-key="${escAttr(it.key)}">🔁</button>
+    </div>`).join("");
+    show(`<h3 class="co-h">A book just went out 😢</h3>
+      <p class="co-sub">${coItems.length?`Tap 🔁 to swap an unavailable book for another, or continue with your remaining ${coItems.length}.`:`Tap 🔁 to head back and pick a replacement.`}</p>
+      <div class="co-list">${rows}</div>
+      <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Back to catalogue</button>${coItems.length?`<button class="btn-wa" id="coNext" style="flex:1.4;justify-content:center">Continue with ${coItems.length}</button>`:""}</div>`);
+    const back=()=>{ closeCheckout(); const b=document.getElementById("books"); if(b)b.scrollIntoView({behavior:"smooth"}); };
+    coModal.querySelector("#coBack").onclick=back;
+    const nx=coModal.querySelector("#coNext"); if(nx)nx.onclick=stepAccount;
+    coModal.querySelectorAll(".co-unavail-swap").forEach(btn=>btn.onclick=()=>{ markBookUnavailable(btn.dataset.isbn, btn.dataset.key); render(); back(); });
+    return;
   }
   stepAccount();
 }
@@ -647,7 +651,7 @@ function stepAccount(){
       if(mode==="login") res=await apiPub("login",{whatsapp:phone,passcode:pass});
       else res=await apiPub("signup",{name,whatsapp:phone,address:addr,passcode:pass});
       if(res.error){err.textContent=res.error;resetConfirm();return;}
-      session={accountId:res.accountId,whatsapp:phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};saveSession();
+      session={accountId:res.accountId,whatsapp:phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};session.hasPending=!!(res.pending&&res.pending.length);saveSession();
       updateNavAuth();
       if(mode==="login" && res.pending && res.pending.length) startMerge(res.pending);
       else stepConfirm();
@@ -723,7 +727,7 @@ function stepConfirm(){
 }
 
 function stepPay(order){
-  const ref=String(order.id).slice(0,8).toUpperCase();
+  const ref=String(order.id).slice(0,4).toUpperCase();
   const deposit=order.type==="deposit";
   const msg=`Hi Bukutopia! 📚 Order ${ref} — ${order.titles}. I'm paying ${money(order.amount)} `+
     `(${deposit?"refundable deposit, first month free":"rental checkout"}). My payment receipt is attached. 🙏`;
@@ -740,10 +744,9 @@ function stepPay(order){
     <div class="co-note"><b>1.</b> Scan the QR and pay ${money(order.amount)}.<br>
       <b>2.</b> Tap the button below and attach your receipt screenshot.<br>
       <b>3.</b> We'll confirm, pack your books and arrange delivery. 📦</div>
-    <div class="co-row"><button class="btn-clear" id="coClose" style="flex:1">Done</button>
-      <a class="btn-wa" id="coWa" href="${link}" target="_blank" style="flex:1.5;justify-content:center;text-decoration:none">Send receipt on WhatsApp</a></div>`);
-  coModal.querySelector("#coClose").onclick=closeCheckout;
+    <div class="co-row"><a class="btn-wa" id="coWa" href="${link}" target="_blank" style="flex:1;justify-content:center;text-decoration:none">Send receipt on WhatsApp</a></div>`);
   coModal.querySelector("#coWa").onclick=()=>{setTimeout(closeCheckout,400);};
+  if(session){ session.hasPending=true; saveSession(); } updateNavAuth();
 }
 
 /* ===================== Top nav: Rental cart + Login / My account ===================== */
@@ -752,8 +755,11 @@ const navLogin=document.getElementById("navLogin");
 
 function updateNavAuth(){
   if(!navLogin)return;
-  if(session){ navLogin.textContent="👤 "+(session.name?String(session.name).split(" ")[0]:"My account"); navLogin.classList.add("me"); }
+  const pend=!!(session&&session.hasPending);
+  if(session){ navLogin.innerHTML="👤 "+esc(session.name?String(session.name).split(" ")[0]:"My account")+(pend?' <span class="nav-dot" title="Unfinished order — payment pending"></span>':""); navLogin.classList.add("me"); }
   else { navLogin.textContent="Login"; navLogin.classList.remove("me"); }
+  const ic=document.getElementById("navLoginIcon");
+  if(ic){ ic.style.position="relative"; let d=ic.querySelector(".nav-dot"); if(pend){ if(!d){ d=document.createElement("span"); d.className="nav-dot"; ic.appendChild(d); } } else if(d){ d.remove(); } }
 }
 if(navCart) navCart.addEventListener("click",e=>{e.preventDefault();openCart();});
 if(navLogin) navLogin.addEventListener("click",e=>{e.preventDefault();openAccount();});
@@ -816,7 +822,7 @@ function accountForm(onSuccess){
         ? await apiPub("login",{whatsapp:phone,passcode:pass})
         : await apiPub("signup",{name,whatsapp:phone,address:addr,passcode:pass});
       if(res.error){err.textContent=res.error;return;}
-      session={accountId:res.accountId,whatsapp:phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};saveSession();
+      session={accountId:res.accountId,whatsapp:phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};session.hasPending=!!(res.pending&&res.pending.length);saveSession();
       onSuccess();
     }catch(e){err.textContent="Couldn't connect. Please try again.";}
   };
@@ -848,12 +854,13 @@ async function myAccountPanel(){
   catch(e){ res={error:"network"}; }
   const orders=res.orders||[];
   const active=orders.filter(o=>o.status!=="Cancelled");
+  if(session){ session.hasPending=active.some(o=>o.status==="Pending payment"&&String(o.paymentStatus)!=="Confirmed"); saveSession(); updateNavAuth(); }
   let listHtml;
   if(res.error){ listHtml=`<p class="co-sub">We couldn't load your orders just now. Please try again in a moment.</p>`; }
   else if(active.length===0){ listHtml=`<div class="co-note">You have no orders yet. Add up to ${MAX_BOOKS} books and check out to get started. 📚</div>`; }
   else {
     listHtml=active.map(o=>{
-      const ref=String(o.id).slice(0,8).toUpperCase();
+      const ref=String(o.id).slice(0,4).toUpperCase();
       const pendingUnpaid=o.status==="Pending payment" && String(o.paymentStatus)!=="Confirmed";
       const meta=(o.status==="Out"||o.status==="Extended")
         ? (o.dueDate?`Due back ${fmtDate(o.dueDate)}`:"")
@@ -891,7 +898,16 @@ const AC_CSS = `
 .ac-main{flex:1;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#103160}
 .ac-main b{color:#e9755c}
 .ac-sub{color:#9a8a72;font-size:12px;font-weight:600;white-space:nowrap;flex:0 0 auto;max-width:44%;overflow:hidden;text-overflow:ellipsis}
-.ac-empty{padding:12px 12px;color:#9a8a72;font-size:13px}`;
+.ac-empty{padding:12px 12px;color:#9a8a72;font-size:13px}
+.nav-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#e9755c;margin-left:4px;vertical-align:middle;animation:bkblink 1.1s infinite}
+@keyframes bkblink{0%,100%{opacity:1}50%{opacity:.15}}
+.nav-icon .nav-dot{position:absolute;top:-3px;right:-3px;margin:0;box-shadow:0 0 0 2px #fff}
+.co-unavail{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px dashed #eadfca}
+.co-unavail-info{flex:1;min-width:0}
+.co-unavail-title{display:block;font-weight:700;color:#aab0bb;text-decoration:line-through;font-size:14px}
+.co-unavail-msg{display:block;color:#c0503a;font-size:12.5px;margin-top:3px;line-height:1.4}
+.co-unavail-swap{flex:0 0 auto;width:38px;height:38px;border-radius:10px;border:1.5px solid #e0d6c2;background:#fff;cursor:pointer;font-size:17px;line-height:1}
+.co-unavail-swap:hover{border-color:#e9755c;background:#fff5f2}`;
 
 function acHighlight(text,q){
   const t=String(text);
