@@ -275,7 +275,11 @@ function coverStyle(color){
   return `background:linear-gradient(135deg,${c[0]},${c[1]})`;
 }
 function coverSrcs(s, book){
-  if(book && book.coverurl) return [book.coverurl];
+  if(book && book.coverurl){
+    const a=[book.coverurl];
+    if(book.isbn){ const loc="covers/"+book.isbn+".jpg"; if(loc!==book.coverurl) a.push(loc); }
+    return a;
+  }
   if(book && book.isbn) return [`https://covers.openlibrary.org/b/isbn/${book.isbn}-L.jpg?default=false`];
   if(s.coverurl) return [s.coverurl];
   return (s.isbns||[]).map(i=>`https://covers.openlibrary.org/b/isbn/${i}-L.jpg?default=false`);
@@ -973,10 +977,58 @@ function buildFilters(){
   const ageSel=document.getElementById("age");
   ages.forEach(a=>ageSel.insertAdjacentHTML("beforeend",`<option value="${a}">Ages ${a}</option>`));
 }
+function _ne(v){return v!=null && String(v).trim()!=="";}
+function _av(v){var a=String(v==null?"":v).trim().toLowerCase();if(a==="")return true;return !(a==="no"||a==="false"||a==="0"||a==="out"||a==="n");}
+// Overlay edits made in the back office (Google Sheet) onto the built-in catalogue.
+// Existing books are matched by ISBN and updated in place; new books/series are appended.
+// Only non-empty sheet values override, so the curated copy never gets wiped.
+function mergeSheetCatalogue(rows){
+  if(!Array.isArray(rows)||!rows.length||typeof BOOKS==="undefined"||!BOOKS) return false;
+  var byName={}; BOOKS.forEach(function(s){byName[s.series]=s;});
+  var haveIsbn={}; BOOKS.forEach(function(s){(s.books||[]).forEach(function(b){if(b.isbn)haveIsbn[String(b.isbn).trim()]=1;});});
+  var meta={};
+  rows.forEach(function(r){
+    var series=String(r.series||"").trim(); if(!series) return;
+    var m=meta[series]||(meta[series]={});
+    if(_ne(r.series_description)) m.desc=String(r.series_description).trim();
+    if(_ne(r.price)&&!isNaN(parseFloat(r.price))) m.price=parseFloat(r.price);
+    if(_ne(r.age)) m.age=String(r.age).trim();
+    if(_ne(r.audience)) m.audience=String(r.audience).trim();
+    if(_ne(r.author)) m.author=String(r.author).trim();
+    if(_ne(r.color)) m.color=String(r.color).trim().toLowerCase();
+    if(_ne(r.available)) m.available=_av(r.available);
+    var isbn=String(r.isbn||"").trim();
+    var s=byName[series];
+    var b=(s&&isbn)?s.books.find(function(x){return String(x.isbn).trim()===isbn;}):null;
+    if(b){
+      if(_ne(r.imgCover)) b.coverurl=String(r.imgCover).trim();
+      if(_ne(r.title)) b.title=String(r.title).trim();
+      if(_ne(r.book_description)) b.desc=String(r.book_description).trim();
+      b.available=_av(r.available);
+    } else if(isbn && _ne(r.title) && !haveIsbn[isbn]){
+      var nb={title:String(r.title).trim(),isbn:isbn,desc:_ne(r.book_description)?String(r.book_description).trim():"",coverurl:_ne(r.imgCover)?String(r.imgCover).trim():"",available:_av(r.available)};
+      if(!s){
+        s={series:series,color:(_ne(r.color)?String(r.color).trim().toLowerCase():"teal"),age:String(r.age||"").trim(),audience:String(r.audience||"Everyone").trim(),price:parseFloat(r.price)||0,author:String(r.author||"").trim(),available:_av(r.available),desc:_ne(r.series_description)?String(r.series_description).trim():"",isbns:[],books:[],titles:[]};
+        byName[series]=s; BOOKS.push(s);
+      }
+      s.books.push(nb); s.titles.push(nb.title); haveIsbn[isbn]=1;
+    }
+  });
+  Object.keys(meta).forEach(function(name){
+    var s=byName[name]; if(!s) return; var m=meta[name];
+    if(m.desc!=null)s.desc=m.desc; if(m.price!=null)s.price=m.price;
+    if(m.age!=null)s.age=m.age; if(m.audience!=null)s.audience=m.audience;
+    if(m.author!=null)s.author=m.author; if(m.color!=null)s.color=m.color;
+    if(m.available!=null)s.available=m.available;
+  });
+  return true;
+}
 async function loadPublicSettings(){
   if(!API_URL)return;
   try{const r=await fetch(API_URL);const d=await r.json();
-    if(d&&d.settings)PUBLIC_SETTINGS=Object.assign(PUBLIC_SETTINGS,d.settings);}catch(e){}
+    if(d&&d.settings)PUBLIC_SETTINGS=Object.assign(PUBLIC_SETTINGS,d.settings);
+    if(d&&Array.isArray(d.catalogue)&&mergeSheetCatalogue(d.catalogue)){ try{render();}catch(e){} }
+  }catch(e){}
 }
 async function init(){
   document.head.insertAdjacentHTML("beforeend","<style>"+PILOT_CSS+CHECKOUT_CSS+AC_CSS+"</style>");
