@@ -341,7 +341,6 @@ function card(s){
       <h3 class="series-name">${esc((s.series&&String(s.series).trim())?s.series:((s.books&&s.books[0]&&s.books[0].title)||s.title||""))}</h3>
       <div class="meta">
         <span class="tag age">Ages ${esc(s.age)}</span>
-        <span class="tag aud">${esc(s.audience)}</span>
         <span class="tag num">${s.books.length} ${s.books.length===1?"book":"books"}</span>
       </div>
       ${author}
@@ -355,12 +354,10 @@ function card(s){
 function applyFilters(){
   const q=document.getElementById("search").value.trim().toLowerCase();
   const age=document.getElementById("age").value;
-  const aud=document.getElementById("aud").value;
   const avail=document.getElementById("avail").value;
   return BOOKS.filter(s=>{
     if(avail==="yes" && s.available===false) return false;
     if(age && s.age!==age) return false;
-    if(aud && s.audience!==aud && s.audience!=="Everyone") return false;
     if(q){
       const hay=(s.series+" "+s.author+" "+s.desc+" "+s.books.map(b=>b.title+" "+b.desc).join(" ")).toLowerCase();
       if(!hay.includes(q)) return false;
@@ -973,11 +970,8 @@ function setupAutocomplete(){
 
 function buildFilters(){
   const ages=[...new Set(BOOKS.map(s=>s.age))].sort((a,b)=>parseInt(a)-parseInt(b));
-  const auds=[...new Set(BOOKS.map(s=>s.audience))].filter(a=>a!=="Everyone").sort();
   const ageSel=document.getElementById("age");
   ages.forEach(a=>ageSel.insertAdjacentHTML("beforeend",`<option value="${a}">Ages ${a}</option>`));
-  const audSel=document.getElementById("aud");
-  auds.forEach(a=>audSel.insertAdjacentHTML("beforeend",`<option value="${a}">${a}</option>`));
 }
 async function loadPublicSettings(){
   if(!API_URL)return;
@@ -999,5 +993,5 @@ async function init(){
   loadSession();loadCart();buildFilters();render();updateCart();updateNavAuth();
   setupAutocomplete();
 }
-["search","age","aud","avail"].forEach(id=>document.getElementById(id).addEventListener("input",render));
+["search","age","avail"].forEach(id=>document.getElementById(id).addEventListener("input",render));
 init();
