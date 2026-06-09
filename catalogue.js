@@ -973,8 +973,9 @@ function setupAutocomplete(){
 }
 
 function buildFilters(){
-  const ages=[...new Set(BOOKS.map(s=>s.age))].sort((a,b)=>parseInt(a)-parseInt(b));
+  const ages=[...new Set(BOOKS.map(s=>s.age))].filter(a=>a!==undefined&&a!=="").sort((a,b)=>parseInt(a)-parseInt(b));
   const ageSel=document.getElementById("age");
+  ageSel.innerHTML='<option value="">All ages</option>';
   ages.forEach(a=>ageSel.insertAdjacentHTML("beforeend",`<option value="${a}">Ages ${a}</option>`));
 }
 function _ne(v){return v!=null && String(v).trim()!=="";}
@@ -1023,11 +1024,52 @@ function mergeSheetCatalogue(rows){
   });
   return true;
 }
+// Build the ENTIRE public catalogue from the Google Sheet (back office = source of truth).
+// Falls back to DEFAULT_BOOKS only when the sheet is empty/unreachable. Add/edit/delete
+// in the back office all reflect here, because the list is rebuilt from the sheet each load.
+function buildBooksFromSheet(rows){
+  if(!Array.isArray(rows)||!rows.length) return [];
+  var order=[], map={};
+  rows.forEach(function(r){
+    var series=String(r.series||"").trim();
+    var isbn=String(r.isbn||"").trim();
+    if(!_ne(r.title) && !isbn) return;
+    var key=series || ("__single__"+isbn);
+    if(!map[key]){
+      map[key]={ series:series, color:"teal", age:"", audience:"Everyone",
+        price:0, author:"", available:true, desc:"", isbns:[], books:[], titles:[] };
+      order.push(key);
+    }
+    var s=map[key];
+    if(_ne(r.series_description)) s.desc=String(r.series_description).trim();
+    if(_ne(r.age)) s.age=String(r.age).trim();
+    if(_ne(r.color)) s.color=String(r.color).trim().toLowerCase();
+    if(_ne(r.audience)) s.audience=String(r.audience).trim();
+    if(_ne(r.author)) s.author=String(r.author).trim();
+    if(_ne(r.price)&&!isNaN(parseFloat(r.price))) s.price=parseFloat(r.price);
+    if(_ne(r.title)){
+      var cover = _ne(r.imgCover) ? String(r.imgCover).trim() : (isbn?("covers/"+isbn+".jpg"):"");
+      var ca = r.copiesAvailable;
+      var inStock = (ca===""||ca===null||ca===undefined) ? true : (Number(ca)>0);
+      var bAvail = _av(r.available) && inStock;
+      s.books.push({ title:String(r.title).trim(), isbn:isbn,
+        desc:_ne(r.book_description)?String(r.book_description).trim():"",
+        coverurl:cover, available:bAvail });
+      s.titles.push(String(r.title).trim());
+    }
+  });
+  var list=order.map(function(k){ return map[k]; }).filter(function(s){ return s.books.length; });
+  list.forEach(function(s){ s.available = s.books.some(function(b){ return b.available!==false; }); });
+  return list;
+}
 async function loadPublicSettings(){
   if(!API_URL)return;
   try{const r=await fetch(API_URL);const d=await r.json();
     if(d&&d.settings)PUBLIC_SETTINGS=Object.assign(PUBLIC_SETTINGS,d.settings);
-    if(d&&Array.isArray(d.catalogue)&&mergeSheetCatalogue(d.catalogue)){ try{render();}catch(e){} }
+    if(d&&Array.isArray(d.catalogue)&&d.catalogue.length){
+      var built=buildBooksFromSheet(d.catalogue);
+      if(built.length){ BOOKS=built; try{buildFilters();}catch(e){} try{render();}catch(e){} }
+    }
   }catch(e){}
 }
 async function init(){
