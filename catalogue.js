@@ -302,6 +302,10 @@ const GAL_CSS = `
 .bk-gal-x{position:absolute;top:-14px;right:-6px;background:#fff;border:none;border-radius:50%;width:34px;height:34px;font-size:16px;font-weight:900;cursor:pointer;color:var(--navy)}
 .bk-gal-prev,.bk-gal-next{position:fixed;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.92);border:none;width:46px;height:46px;border-radius:50%;font-size:26px;font-weight:900;cursor:pointer;color:var(--navy)}
 .bk-gal-prev{left:14px}.bk-gal-next{right:14px}
+.cov-nav{position:absolute;top:50%;transform:translateY(-50%);z-index:5;background:rgba(255,255,255,.92);border:none;width:30px;height:30px;border-radius:50%;font-size:19px;font-weight:900;line-height:1;cursor:pointer;color:var(--navy);box-shadow:0 2px 8px rgba(16,49,96,.28);display:flex;align-items:center;justify-content:center;padding:0}
+.cov-nav:hover{background:#fff}
+.cov-prev{left:8px}.cov-next{right:8px}
+.cov-count{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);z-index:5;background:rgba(16,49,96,.78);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
 `;
 function openGallery(isbn){
   let book=null;
@@ -319,6 +323,17 @@ function openGallery(isbn){
   document.body.appendChild(ov);
 }
 window.openGallery=openGallery;
+function galNav(btn,dir){
+  const cover=btn.closest(".cover"); if(!cover)return;
+  const img=cover.querySelector(".cover-img"); if(!img)return;
+  const list=(img.getAttribute("data-gallery")||"").split("|").filter(Boolean); if(list.length<2)return;
+  let i=parseInt(img.getAttribute("data-gidx")||"0",10)||0;
+  i=(i+dir+list.length)%list.length;
+  img.setAttribute("data-gidx",String(i)); img.setAttribute("data-srcs",""); img.onerror=null;
+  img.src=list[i];
+  const c=cover.querySelector(".cov-count"); if(c)c.textContent=(i+1)+" / "+list.length;
+}
+window.galNav=galNav;
 
 function esc(s){return (s||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
 function escAttr(s){return esc(s).replace(/"/g,"&quot;");}
@@ -333,11 +348,13 @@ function coverInner(s, book, stacked, count){
   const srcs=coverSrcs(s, book);
   const sold = s.available===false ? `<span class="soldout">Coming soon</span>` : "";
   const ph=`<div class="cover-ph"${srcs.length?"":' style="display:flex"'}><svg class="fl ph-fl"><use href="#sprig"/></svg><div class="ph-name">${esc(s.series)}</div></div>`;
+  const gallery = (book && book.images && book.images.length>1 && !stacked) ? book.images : null;
   const img=srcs.length
-    ? `<div class="cover-stack">${stacked?'<div class="sl sl2"></div><div class="sl sl1"></div>':''}<img class="cover-img" src="${escAttr(srcs[0])}" data-srcs="${escAttr(srcs.slice(1).join("|"))}" alt="${escAttr(book?book.title:s.series)} cover" loading="lazy" onerror="coverFallback(this)"></div>`
+    ? `<div class="cover-stack">${stacked?'<div class="sl sl2"></div><div class="sl sl1"></div>':''}<img class="cover-img" src="${escAttr(srcs[0])}" data-srcs="${escAttr(srcs.slice(1).join("|"))}"${gallery?` data-gallery="${escAttr(gallery.join("|"))}" data-gidx="0"`:""} alt="${escAttr(book?book.title:s.series)} cover" loading="lazy" onerror="coverFallback(this)"></div>`
     : "";
+  const nav = gallery ? `<button class="cov-nav cov-prev" onclick="galNav(this,-1)" aria-label="Previous page">‹</button><button class="cov-nav cov-next" onclick="galNav(this,1)" aria-label="Next page">›</button><span class="cov-count">1 / ${gallery.length}</span>` : "";
   const badge = (stacked && count) ? `<span class="stack-count">${count} books added</span>` : "";
-  return `<svg class="fl watermark"><use href="#leaf"/></svg>${badge}${img}${ph}<span class="price">RM${s.price}/book</span>${sold}`;
+  return `<svg class="fl watermark"><use href="#leaf"/></svg>${badge}${img}${nav}${ph}<span class="price">RM${s.price}/book</span>${sold}`;
 }
 // Resting cover when not hovering: 2+ ADDED -> stacked (first book on top);
 // else the clicked/sticky book; else the first book.
@@ -359,11 +376,10 @@ function card(s){
       ? `<button class="book-toggle"><span class="car">▸</span>${esc(b.title)}</button>`
       : `<span class="book-title">${esc(b.title)}</span>`;
     const descEl = b.desc ? `<div class="book-desc">${esc(b.desc)}</div>` : "";
-    const gal = (b.images && b.images.length>1) ? `<button class="look-inside" onclick="openGallery('${escAttr(String(b.isbn))}')">🔍 Look inside</button>` : "";
     return `<div class="book${on?' sel':''}" data-title="${escAttr(b.title)}">
       <div class="book-row">${titleEl}
         <button class="add-btn${on?' added':''}" data-key="${escAttr(key)}" ${bAvail?"":"disabled"}>${lbl}</button>
-      </div>${descEl}${gal}</div>`;
+      </div>${descEl}</div>`;
   }).join("");
 
   const author = s.author? `<div class="author">by ${esc(s.author)}</div>` : "";
