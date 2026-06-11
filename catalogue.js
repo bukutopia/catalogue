@@ -292,6 +292,34 @@ function coverFallback(img){
 }
 window.coverFallback=coverFallback;
 
+const GAL_CSS = `
+.look-inside{background:none;border:none;color:var(--coral-dark);font-weight:800;font-size:12px;cursor:pointer;padding:2px 0 0;font-family:inherit}
+.look-inside:hover{text-decoration:underline}
+.bk-gal{position:fixed;inset:0;background:rgba(16,49,96,.82);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px}
+.bk-gal-inner{position:relative;max-width:92vw;max-height:90vh;display:flex;flex-direction:column;align-items:center;gap:10px}
+.bk-gal-inner img{max-width:88vw;max-height:78vh;border-radius:8px;background:#fff;box-shadow:0 14px 40px rgba(0,0,0,.45)}
+.bk-gal-cap{color:#fff;font-weight:700;font-size:14px;text-align:center}
+.bk-gal-x{position:absolute;top:-14px;right:-6px;background:#fff;border:none;border-radius:50%;width:34px;height:34px;font-size:16px;font-weight:900;cursor:pointer;color:var(--navy)}
+.bk-gal-prev,.bk-gal-next{position:fixed;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.92);border:none;width:46px;height:46px;border-radius:50%;font-size:26px;font-weight:900;cursor:pointer;color:var(--navy)}
+.bk-gal-prev{left:14px}.bk-gal-next{right:14px}
+`;
+function openGallery(isbn){
+  let book=null;
+  for(let i=0;i<BOOKS.length;i++){const f=(BOOKS[i].books||[]).find(x=>String(x.isbn)===String(isbn));if(f){book=f;break;}}
+  if(!book||!book.images||!book.images.length)return;
+  const imgs=book.images; let idx=0;
+  const ov=document.createElement("div"); ov.className="bk-gal";
+  function draw(){ ov.innerHTML='<div class="bk-gal-inner"><button class="bk-gal-x" aria-label="Close">✕</button><img src="'+escAttr(imgs[idx])+'" alt="'+escAttr(book.title)+'"><div class="bk-gal-cap">'+esc(book.title)+' — '+(idx+1)+'/'+imgs.length+'</div></div>'+(imgs.length>1?'<button class="bk-gal-prev" aria-label="Previous">‹</button><button class="bk-gal-next" aria-label="Next">›</button>':''); }
+  draw();
+  ov.addEventListener("click",e=>{ const t=e.target;
+    if(t===ov||t.classList.contains("bk-gal-x")){ ov.remove(); return; }
+    if(t.classList.contains("bk-gal-next")){ idx=(idx+1)%imgs.length; draw(); }
+    else if(t.classList.contains("bk-gal-prev")){ idx=(idx-1+imgs.length)%imgs.length; draw(); }
+  });
+  document.body.appendChild(ov);
+}
+window.openGallery=openGallery;
+
 function esc(s){return (s||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
 function escAttr(s){return esc(s).replace(/"/g,"&quot;");}
 
@@ -331,10 +359,11 @@ function card(s){
       ? `<button class="book-toggle"><span class="car">▸</span>${esc(b.title)}</button>`
       : `<span class="book-title">${esc(b.title)}</span>`;
     const descEl = b.desc ? `<div class="book-desc">${esc(b.desc)}</div>` : "";
+    const gal = (b.images && b.images.length>1) ? `<button class="look-inside" onclick="openGallery('${escAttr(String(b.isbn))}')">🔍 Look inside</button>` : "";
     return `<div class="book${on?' sel':''}" data-title="${escAttr(b.title)}">
       <div class="book-row">${titleEl}
         <button class="add-btn${on?' added':''}" data-key="${escAttr(key)}" ${bAvail?"":"disabled"}>${lbl}</button>
-      </div>${descEl}</div>`;
+      </div>${descEl}${gal}</div>`;
   }).join("");
 
   const author = s.author? `<div class="author">by ${esc(s.author)}</div>` : "";
@@ -1052,9 +1081,11 @@ function buildBooksFromSheet(rows){
       var ca = r.copiesAvailable;
       var inStock = (ca===""||ca===null||ca===undefined) ? true : (Number(ca)>0);
       var bAvail = _av(r.available) && inStock;
+      var imgs=[]; if(cover) imgs.push(cover);
+      ["imgBack","imgInside1","imgInside2","imgInside3"].forEach(function(k){ if(_ne(r[k])) imgs.push(String(r[k]).trim()); });
       s.books.push({ title:String(r.title).trim(), isbn:isbn,
         desc:_ne(r.book_description)?String(r.book_description).trim():"",
-        coverurl:cover, available:bAvail });
+        coverurl:cover, available:bAvail, images:imgs });
       s.titles.push(String(r.title).trim());
     }
   });
@@ -1073,7 +1104,7 @@ async function loadPublicSettings(){
   }catch(e){}
 }
 async function init(){
-  document.head.insertAdjacentHTML("beforeend","<style>"+PILOT_CSS+CHECKOUT_CSS+AC_CSS+"</style>");
+  document.head.insertAdjacentHTML("beforeend","<style>"+PILOT_CSS+CHECKOUT_CSS+AC_CSS+GAL_CSS+"</style>");
   loadPublicSettings();
   const note=document.getElementById("srcnote");
   if(SHEET_CSV_URL){
