@@ -205,6 +205,12 @@
   .step{background:#fff;border:1px solid var(--line);border-radius:20px;padding:22px 16px;text-align:center;box-shadow:var(--shadow-sm)}
   .step .num{width:38px;height:38px;border-radius:50%;background:var(--navy);color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;margin:0 auto 10px}
   .step h3{font-size:17px;margin:0 0 4px}.step p{font-size:13.5px;color:var(--muted);margin:0}
+  #how{position:relative;background:#ffd21f;overflow:hidden;padding:70px 18px}
+  #how .wave-t,#how .wave-b{position:absolute;left:0;width:100%;height:54px;z-index:0;line-height:0}
+  #how .wave-t{top:-1px}#how .wave-b{bottom:-1px;transform:scaleY(-1)}
+  #how .wave-t svg,#how .wave-b svg{width:100%;height:100%;display:block}
+  #how .inner{position:relative;z-index:1}
+  #how .eyebrow{color:var(--coral-dark)}
   .offer{background:var(--navy);color:#fff;border-radius:24px;padding:28px;text-align:center;margin-top:24px}
   .offer .big{font-family:'Playfair Display',serif;font-size:28px;color:var(--yellow)}
   .offer p{margin:8px auto 0;max-width:560px;color:#dfe7f2;font-size:15px}
@@ -272,7 +278,9 @@
   <a class="hbtn primary" href="#books">Browse &amp; order books ↓</a>
 </div>
 
-<section id="how" class="sec"><div class="inner">
+<section id="how" class="sec">
+  <div class="wave-t"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path fill="#FFFDF8" d="M0,0 H1440 V24 C1190,58 1090,8 860,30 C650,50 545,10 360,30 C225,44 110,16 0,26 Z"/></svg></div>
+  <div class="inner">
   <div class="eyebrow">how it works</div>
   <h2 class="center">Reading made simple</h2>
   <div class="steps">
@@ -281,7 +289,9 @@
     <div class="step"><div class="num">3</div><h3>Return</h3><p>Leave them at your building's parcel area — no postage.</p></div>
     <div class="step"><div class="num">4</div><h3>Discover</h3><p>Swap for your next set of favourites.</p></div>
   </div>
-</div></section>
+  </div>
+  <div class="wave-b"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path fill="#FFFDF8" d="M0,0 H1440 V24 C1190,58 1090,8 860,30 C650,50 545,10 360,30 C225,44 110,16 0,26 Z"/></svg></div>
+</section>
 
 <section id="books"><div class="sec" style="padding-bottom:6px"><div class="inner"><div class="eyebrow">the collection</div><h2 class="center">Browse our books</h2></div></div>
 <div class="controls">
