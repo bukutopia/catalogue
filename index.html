@@ -147,6 +147,22 @@
   .topnav .nwrap{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:9px 16px;flex-wrap:wrap;position:relative}
   .nav-menu{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex:1;flex-wrap:wrap}
   .toplogo{text-align:center;padding:18px 16px 8px;background:var(--bg)}
+  .topbar-wrap{background:#fff;border-bottom:1px solid var(--line)}
+  .topbar{display:flex;align-items:center;gap:18px;max-width:1180px;margin:0 auto;padding:12px 24px}
+  .topbar .tabs{flex:1;display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap}
+  .topbar .tabs a{font-family:'Nunito',sans-serif;font-weight:600;font-size:13px;letter-spacing:.4px;text-transform:uppercase;color:var(--navy);text-decoration:none;white-space:nowrap}
+  .topbar .tabs a:hover{color:var(--coral-dark)}
+  .topbar .tabs .sep{color:var(--line);font-weight:700}
+  .topbar .logo-mid{flex:0 0 auto;display:flex;align-items:center;justify-content:center;line-height:0}
+  .topbar .logo-mid img{height:50px;width:auto;display:block}
+  .topbar .actions{flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px}
+  @media(max-width:760px){
+    .topbar{flex-wrap:wrap;justify-content:center;gap:10px;padding:10px 14px}
+    .topbar .logo-mid{order:1;flex:1 1 100%}
+    .topbar .logo-mid img{height:42px}
+    .topbar .tabs{order:2;flex:1 1 100%;justify-content:center}
+    .topbar .actions{order:3;flex:1 1 100%;justify-content:center}
+  }
   .topnav .brand{font-weight:900;font-size:20px;letter-spacing:-1px;color:var(--navy);text-decoration:none}
   .topnav .brand .t{color:var(--coral)}
   .topnav nav{display:flex;gap:2px;flex:1;flex-wrap:wrap}
@@ -241,17 +257,16 @@
   </symbol>
 </defs></svg>
 
-<div class="topnav"><div class="nwrap">
-  <div class="nav-menu" id="navMenu">
+<div class="topbar-wrap"><div class="topbar">
+  <nav class="tabs">
+    <a href="#how">How it works</a><span class="sep">|</span><a href="#faq">FAQ</a><span class="sep">|</span><a href="#books">Books</a>
+  </nav>
+  <a href="#top" class="logo-mid"><img src="logo-wordmark.png" alt="Bukutopia — read more. own less." /></a>
+  <div class="actions">
     <a href="#" class="navact cart" id="navCart" role="button">🛒 Rental cart <span class="nav-badge" id="navCartCount" hidden>0</span></a>
     <a href="#" class="navact" id="navLogin" role="button">Login</a>
   </div>
-  <a href="#" class="nav-icon cart" id="navCartIcon" role="button" aria-label="Rental cart">🛒<span class="nav-badge icon-badge" id="navCartCountIcon" hidden>0</span></a>
-  <a href="#" class="nav-icon" id="navLoginIcon" role="button" aria-label="Login">👤</a>
-  <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
 </div></div>
-
-<div class="toplogo"><img src="logo-wordmark.png" class="logo-img" alt="Bukutopia — read more. own less." /></div>
 
 <a class="sb-ann" id="sbAnn" href="#books" style="display:none"><img id="sbAnnImg" alt="Announcement"></a>
 
