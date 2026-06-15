@@ -1072,17 +1072,22 @@ function mergeSheetCatalogue(rows){
 // Build the ENTIRE public catalogue from the Google Sheet (back office = source of truth).
 // Falls back to DEFAULT_BOOKS only when the sheet is empty/unreachable. Add/edit/delete
 // in the back office all reflect here, because the list is rebuilt from the sheet each load.
-var SITE_BANNERS={announce:"",hero:""};
+var SITE_BANNERS={announce:"",heroes:[]};
+var SITE_HOW={eyebrow:"",heading:"",steps:[]};
 function buildBooksFromSheet(rows){
   if(!Array.isArray(rows)||!rows.length) return [];
-  SITE_BANNERS={announce:"",hero:""};
+  SITE_BANNERS={announce:"",heroes:[]};
+  SITE_HOW={eyebrow:"",heading:"",steps:[]};
   var order=[], map={};
   rows.forEach(function(r){
     var series=String(r.series||"").trim();
     var isbn=String(r.isbn||"").trim();
-    if(series==="__SITE__" || /^__banner_(announce|hero)__$/.test(isbn)){
-      if(/announce/.test(isbn)) SITE_BANNERS.announce=_ne(r.imgCover)?String(r.imgCover).trim():"";
-      if(/hero/.test(isbn)) SITE_BANNERS.hero=_ne(r.imgCover)?String(r.imgCover).trim():"";
+    if(series==="__SITE__" || /^__(banner|how)_/.test(isbn)){
+      var _v=_ne(r.imgCover)?String(r.imgCover).trim():"";
+      if(/^__banner_announce__$/.test(isbn)) SITE_BANNERS.announce=_v;
+      else if(/^__banner_hero(\d*)__$/.test(isbn)){ var _m=isbn.match(/^__banner_hero(\d*)__$/); var _n=_m[1]?parseInt(_m[1],10):1; SITE_BANNERS.heroes[_n-1]=_v; }
+      else if(isbn==="__how_head__"){ SITE_HOW.eyebrow=_ne(r.series_description)?String(r.series_description).trim():""; SITE_HOW.heading=_ne(r.book_description)?String(r.book_description).trim():""; }
+      else { var _hm=isbn.match(/^__how_([1-4])__$/); if(_hm){ SITE_HOW.steps[parseInt(_hm[1],10)-1]={title:_ne(r.title)?String(r.title).trim():"",desc:_ne(r.book_description)?String(r.book_description).trim():""}; } }
       return;
     }
     if(!_ne(r.title) && !isbn) return;
@@ -1124,16 +1129,43 @@ async function loadPublicSettings(){
       var built=buildBooksFromSheet(d.catalogue);
       if(built.length){ BOOKS=built; try{buildFilters();}catch(e){} try{render();}catch(e){} }
       try{applyBanners();}catch(e){}
+      try{applyHow();}catch(e){}
     }
   }catch(e){}
 }
 function applyBanners(){
   var a=document.getElementById("sbAnn"),ai=document.getElementById("sbAnnImg");
-  var h=document.getElementById("sbHero"),hi=document.getElementById("sbHeroImg");
   if(a&&ai){ if(SITE_BANNERS.announce){ ai.src=SITE_BANNERS.announce; a.style.display="block"; } else { a.style.display="none"; } }
-  if(h&&hi){ if(SITE_BANNERS.hero){ hi.src=SITE_BANNERS.hero; h.style.display="block"; } else { h.style.display="none"; } }
+  var hero=document.getElementById("sbHero");
+  if(!hero) return;
+  var imgs=(SITE_BANNERS.heroes||[]).filter(function(u){return u;});
+  if(!imgs.length){ hero.style.display="none"; hero.innerHTML=""; return; }
+  hero.style.display="block";
+  if(imgs.length===1){ hero.innerHTML='<a href="#books" class="hc-slide on"><img src="'+escAttr(imgs[0])+'" alt="New arrivals"></a>'; return; }
+  var slides=imgs.map(function(u,i){return '<a href="#books" class="hc-slide'+(i===0?" on":"")+'"><img src="'+escAttr(u)+'" alt="Banner '+(i+1)+'"></a>';}).join("");
+  var dots=imgs.map(function(u,i){return '<span class="hc-dot'+(i===0?" on":"")+'" data-i="'+i+'"></span>';}).join("");
+  hero.innerHTML='<div class="hc">'+slides+'<button class="hc-prev" aria-label="Previous banner">‹</button><button class="hc-next" aria-label="Next banner">›</button><div class="hc-dots">'+dots+'</div></div>';
+  var root=hero.querySelector(".hc"), n=imgs.length, idx=0, timer=null;
+  var slideEls=root.querySelectorAll(".hc-slide"), dotEls=root.querySelectorAll(".hc-dot");
+  function go(i){ idx=((i%n)+n)%n; for(var k=0;k<n;k++){ slideEls[k].classList.toggle("on",k===idx); dotEls[k].classList.toggle("on",k===idx);} }
+  function start(){ stop(); timer=setInterval(function(){go(idx+1);},5000); }
+  function stop(){ if(timer){clearInterval(timer);timer=null;} }
+  root.querySelector(".hc-prev").addEventListener("click",function(e){e.preventDefault();e.stopPropagation();go(idx-1);start();});
+  root.querySelector(".hc-next").addEventListener("click",function(e){e.preventDefault();e.stopPropagation();go(idx+1);start();});
+  for(var di=0;di<dotEls.length;di++){ (function(el){el.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();go(parseInt(el.getAttribute("data-i"),10));start();});})(dotEls[di]); }
+  root.addEventListener("mouseenter",stop); root.addEventListener("mouseleave",start);
+  start();
 }
 window.applyBanners=applyBanners;
+function applyHow(){
+  if(SITE_HOW.eyebrow){var e=document.getElementById("howEyebrow");if(e)e.textContent=SITE_HOW.eyebrow;}
+  if(SITE_HOW.heading){var hd=document.getElementById("howHeading");if(hd)hd.textContent=SITE_HOW.heading;}
+  for(var i=0;i<4;i++){ var s=SITE_HOW.steps[i]; if(!s)continue;
+    if(s.title){var t=document.getElementById("howT"+(i+1));if(t)t.textContent=s.title;}
+    if(s.desc){var dn=document.getElementById("howD"+(i+1));if(dn)dn.textContent=s.desc;}
+  }
+}
+window.applyHow=applyHow;
 async function init(){
   document.head.insertAdjacentHTML("beforeend","<style>"+PILOT_CSS+CHECKOUT_CSS+AC_CSS+GAL_CSS+"</style>");
   loadPublicSettings();

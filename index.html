@@ -210,7 +210,15 @@
   .site-banners{display:flex;flex-direction:column;gap:0;background:var(--bg)}
   .sb-ann,.sb-hero{display:block;line-height:0;width:100%}
   .sb-ann img{width:100%;height:auto;display:block;max-height:130px;object-fit:cover}
-  .sb-hero img{width:100%;height:auto;display:block;max-height:460px;object-fit:cover}
+  .sb-hero img{width:100%;height:auto;display:block;max-height:610px;object-fit:cover}
+  .sb-hero{position:relative}
+  .hc{position:relative;width:100%;overflow:hidden}
+  .hc-slide{display:none}.hc-slide.on{display:block}
+  .hc-prev,.hc-next{position:absolute;top:50%;transform:translateY(-50%);z-index:3;background:rgba(255,255,255,.9);border:none;width:42px;height:42px;border-radius:50%;font-size:24px;line-height:1;cursor:pointer;color:var(--navy);box-shadow:0 2px 8px rgba(16,49,96,.25)}
+  .hc-prev{left:14px}.hc-next{right:14px}
+  .hc-dots{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:3;display:flex;gap:8px}
+  .hc-dot{width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.65);border:1px solid rgba(16,49,96,.35);cursor:pointer}
+  .hc-dot.on{background:var(--coral);border-color:var(--coral)}
   .hbtn{display:inline-flex;align-items:center;gap:8px;border:none;font-family:inherit;font-weight:800;font-size:15px;border-radius:14px;padding:12px 20px;cursor:pointer;text-decoration:none}
   .hbtn.primary{background:var(--coral);color:#fff;box-shadow:var(--shadow)}.hbtn.primary:hover{background:var(--coral-dark)}
   .hbtn.wa{background:#25D366;color:#fff}
@@ -286,7 +294,7 @@
 </header>
 
 <section class="site-banners">
-  <a class="sb-hero" id="sbHero" href="#books" style="display:none"><img id="sbHeroImg" alt="New arrivals"></a>
+  <div class="sb-hero" id="sbHero" style="display:none"></div>
 </section>
 
 <div class="hero-cta" style="margin:26px auto 8px">
@@ -296,13 +304,13 @@
 <section id="how" class="sec">
   <div class="wave-t"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path fill="#FFFDF8" d="M0,0 H1440 V24 C1190,58 1090,8 860,30 C650,50 545,10 360,30 C225,44 110,16 0,26 Z"/></svg></div>
   <div class="inner">
-  <div class="eyebrow">how it works</div>
-  <h2 class="center">Reading made simple</h2>
+  <div class="eyebrow" id="howEyebrow">how it works</div>
+  <h2 class="center" id="howHeading">Reading made simple</h2>
   <div class="steps">
-    <div class="step"><div class="num">1</div><h3>Pick</h3><p>Choose up to 4 books from our catalogue below.</p></div>
-    <div class="step"><div class="num">2</div><h3>Enjoy</h3><p>Read them at home for a whole month.</p></div>
-    <div class="step"><div class="num">3</div><h3>Return</h3><p>Leave them at your building's parcel area — no postage.</p></div>
-    <div class="step"><div class="num">4</div><h3>Discover</h3><p>Swap for your next set of favourites.</p></div>
+    <div class="step"><div class="num">1</div><h3 id="howT1">Pick</h3><p id="howD1">Choose up to 4 books from our catalogue below.</p></div>
+    <div class="step"><div class="num">2</div><h3 id="howT2">Enjoy</h3><p id="howD2">Read them at home for a whole month.</p></div>
+    <div class="step"><div class="num">3</div><h3 id="howT3">Return</h3><p id="howD3">Leave them at your building's parcel area — no postage.</p></div>
+    <div class="step"><div class="num">4</div><h3 id="howT4">Discover</h3><p id="howD4">Swap for your next set of favourites.</p></div>
   </div>
   </div>
   <div class="wave-b"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path fill="#FFFDF8" d="M0,0 H1440 V24 C1190,58 1090,8 860,30 C650,50 545,10 360,30 C225,44 110,16 0,26 Z"/></svg></div>
@@ -375,42 +383,9 @@
 </div>
 
 <div class="modal-bg" id="modalBg">
-  <div class="modal" id="coModal"><!-- checkout steps render here (catalogue.js) --></div>
+  <div class="modal" id="coModal"></div>
 </div>
 
-<script>
-  // Mobile hamburger menu toggle
-  (function(){
-    var t=document.getElementById("navToggle"), m=document.getElementById("navMenu");
-    if(!t||!m)return;
-    function close(){m.classList.remove("open");t.setAttribute("aria-expanded","false");}
-    t.addEventListener("click",function(e){
-      e.stopPropagation();
-      var open=m.classList.toggle("open");
-      t.setAttribute("aria-expanded",open?"true":"false");
-    });
-    m.addEventListener("click",function(e){ if(e.target.closest("a")) close(); });
-    document.addEventListener("click",function(e){
-      if(m.classList.contains("open") && !m.contains(e.target) && e.target!==t && !t.contains(e.target)) close();
-    });
-  })();
-  // Mobile cart + login icons proxy the menu buttons and mirror their state
-  (function(){
-    var cartIcon=document.getElementById("navCartIcon"),
-        loginIcon=document.getElementById("navLoginIcon"),
-        navCart=document.getElementById("navCart"),
-        navLogin=document.getElementById("navLogin"),
-        srcBadge=document.getElementById("navCartCount"),
-        iconBadge=document.getElementById("navCartCountIcon");
-    if(cartIcon&&navCart) cartIcon.addEventListener("click",function(e){e.preventDefault();navCart.click();});
-    if(loginIcon&&navLogin) loginIcon.addEventListener("click",function(e){e.preventDefault();navLogin.click();});
-    function syncBadge(){ if(!srcBadge||!iconBadge)return; iconBadge.textContent=srcBadge.textContent; iconBadge.hidden=srcBadge.hidden; }
-    function syncLogin(){ if(!navLogin||!loginIcon)return; loginIcon.classList.toggle("me", navLogin.classList.contains("me")); }
-    if(srcBadge) new MutationObserver(syncBadge).observe(srcBadge,{attributes:true,childList:true,characterData:true,subtree:true});
-    if(navLogin) new MutationObserver(syncLogin).observe(navLogin,{attributes:true,attributeFilter:["class"]});
-    syncBadge(); syncLogin();
-  })();
-</script>
-<script src="catalogue.js?v=13"></script>
+<script src="catalogue.js?v=15"></script>
 </body>
 </html>
