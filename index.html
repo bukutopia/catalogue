@@ -145,7 +145,8 @@
   section[id]{scroll-margin-top:62px}
   .topnav{position:sticky;top:0;z-index:60;background:rgba(255,253,248,.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
   .topnav .nwrap{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:9px 16px;flex-wrap:wrap;position:relative}
-  .nav-menu{display:flex;align-items:center;gap:12px;flex:1;flex-wrap:wrap}
+  .nav-menu{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex:1;flex-wrap:wrap}
+  .toplogo{text-align:center;padding:18px 16px 8px;background:var(--bg)}
   .topnav .brand{font-weight:900;font-size:20px;letter-spacing:-1px;color:var(--navy);text-decoration:none}
   .topnav .brand .t{color:var(--coral)}
   .topnav nav{display:flex;gap:2px;flex:1;flex-wrap:wrap}
@@ -235,7 +236,6 @@
 </defs></svg>
 
 <div class="topnav"><div class="nwrap">
-  <a href="#top" class="brand">buku<span class="t">topia</span></a>
   <div class="nav-menu" id="navMenu">
     <a href="#" class="navact cart" id="navCart" role="button">🛒 Rental cart <span class="nav-badge" id="navCartCount" hidden>0</span></a>
     <a href="#" class="navact" id="navLogin" role="button">Login</a>
@@ -245,6 +245,8 @@
   <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
 </div></div>
 
+<div class="toplogo"><img src="logo-wordmark.png" class="logo-img" alt="Bukutopia — read more. own less." /></div>
+
 <a class="sb-ann" id="sbAnn" href="#books" style="display:none"><img id="sbAnnImg" alt="Announcement"></a>
 
 <header id="top">
@@ -253,8 +255,6 @@
   <svg class="fl deco d3"><use href="#sparkle"/></svg>
   <svg class="fl deco d4"><use href="#leaf"/></svg>
   <svg class="fl deco d5"><use href="#sparkle"/></svg>
-  <!-- Official Bukutopia wordmark (tagline is part of the image) -->
-  <img src="logo-wordmark.png" class="logo-img" alt="Bukutopia — read more. own less." />
   <p class="pitch">A thoughtfully curated children's book rental service. Pick your books, enjoy them at home, return them after a month — and discover new favourites, without the clutter.</p>
   <div class="badges">
     <span class="pill a">✨ FREE first month (4 books)</span>
