@@ -1072,12 +1072,19 @@ function mergeSheetCatalogue(rows){
 // Build the ENTIRE public catalogue from the Google Sheet (back office = source of truth).
 // Falls back to DEFAULT_BOOKS only when the sheet is empty/unreachable. Add/edit/delete
 // in the back office all reflect here, because the list is rebuilt from the sheet each load.
+var SITE_BANNERS={announce:"",hero:""};
 function buildBooksFromSheet(rows){
   if(!Array.isArray(rows)||!rows.length) return [];
+  SITE_BANNERS={announce:"",hero:""};
   var order=[], map={};
   rows.forEach(function(r){
     var series=String(r.series||"").trim();
     var isbn=String(r.isbn||"").trim();
+    if(series==="__SITE__" || /^__banner_(announce|hero)__$/.test(isbn)){
+      if(/announce/.test(isbn)) SITE_BANNERS.announce=_ne(r.imgCover)?String(r.imgCover).trim():"";
+      if(/hero/.test(isbn)) SITE_BANNERS.hero=_ne(r.imgCover)?String(r.imgCover).trim():"";
+      return;
+    }
     if(!_ne(r.title) && !isbn) return;
     var key=series || ("__single__"+isbn);
     if(!map[key]){
@@ -1116,9 +1123,17 @@ async function loadPublicSettings(){
     if(d&&Array.isArray(d.catalogue)&&d.catalogue.length){
       var built=buildBooksFromSheet(d.catalogue);
       if(built.length){ BOOKS=built; try{buildFilters();}catch(e){} try{render();}catch(e){} }
+      try{applyBanners();}catch(e){}
     }
   }catch(e){}
 }
+function applyBanners(){
+  var a=document.getElementById("sbAnn"),ai=document.getElementById("sbAnnImg");
+  var h=document.getElementById("sbHero"),hi=document.getElementById("sbHeroImg");
+  if(a&&ai){ if(SITE_BANNERS.announce){ ai.src=SITE_BANNERS.announce; a.style.display="block"; } else { a.style.display="none"; } }
+  if(h&&hi){ if(SITE_BANNERS.hero){ hi.src=SITE_BANNERS.hero; h.style.display="block"; } else { h.style.display="none"; } }
+}
+window.applyBanners=applyBanners;
 async function init(){
   document.head.insertAdjacentHTML("beforeend","<style>"+PILOT_CSS+CHECKOUT_CSS+AC_CSS+GAL_CSS+"</style>");
   loadPublicSettings();

@@ -190,6 +190,10 @@
   }
   .controls{position:static !important}
   .hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:22px;position:relative;z-index:1}
+  .site-banners{display:flex;flex-direction:column;gap:0;background:var(--bg)}
+  .sb-ann,.sb-hero{display:block;line-height:0;width:100%}
+  .sb-ann img{width:100%;height:auto;display:block;max-height:130px;object-fit:cover}
+  .sb-hero img{width:100%;height:auto;display:block;max-height:460px;object-fit:cover}
   .hbtn{display:inline-flex;align-items:center;gap:8px;border:none;font-family:inherit;font-weight:800;font-size:15px;border-radius:14px;padding:12px 20px;cursor:pointer;text-decoration:none}
   .hbtn.primary{background:var(--coral);color:#fff;box-shadow:var(--shadow)}.hbtn.primary:hover{background:var(--coral-dark)}
   .hbtn.wa{background:#25D366;color:#fff}
@@ -233,7 +237,6 @@
 <div class="topnav"><div class="nwrap">
   <a href="#top" class="brand">buku<span class="t">topia</span></a>
   <div class="nav-menu" id="navMenu">
-    <nav><a href="#how">How it works</a><a href="#books">Browse &amp; Order books</a><a href="#faq">FAQ</a></nav>
     <a href="#" class="navact cart" id="navCart" role="button">🛒 Rental cart <span class="nav-badge" id="navCartCount" hidden>0</span></a>
     <a href="#" class="navact" id="navLogin" role="button">Login</a>
   </div>
@@ -260,6 +263,11 @@
     <a class="hbtn primary" href="#books">Browse &amp; order books ↓</a>
   </div>
 </header>
+
+<section class="site-banners">
+  <a class="sb-ann" id="sbAnn" href="#books" style="display:none"><img id="sbAnnImg" alt="Announcement"></a>
+  <a class="sb-hero" id="sbHero" href="#books" style="display:none"><img id="sbHeroImg" alt="New arrivals"></a>
+</section>
 
 <section id="how" class="sec"><div class="inner">
   <div class="eyebrow">how it works</div>
@@ -375,6 +383,6 @@
     syncBadge(); syncLogin();
   })();
 </script>
-<script src="catalogue.js?v=12"></script>
+<script src="catalogue.js?v=13"></script>
 </body>
 </html>
