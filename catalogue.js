@@ -1074,6 +1074,7 @@ function mergeSheetCatalogue(rows){
 // in the back office all reflect here, because the list is rebuilt from the sheet each load.
 var SITE_BANNERS={announce:"",heroes:[]};
 var SITE_HOW={eyebrow:"",heading:"",steps:[]};
+var HERO_FILES=["Hero_june.jpg?v=1"];
 function buildBooksFromSheet(rows){
   if(!Array.isArray(rows)||!rows.length) return [];
   SITE_BANNERS={announce:"",heroes:[]};
@@ -1138,48 +1139,8 @@ function applyBanners(){
   if(a&&ai){ if(SITE_BANNERS.announce){ ai.src=SITE_BANNERS.announce; a.style.display="block"; } else { a.style.display="none"; } }
   var hero=document.getElementById("sbHero");
   if(!hero) return;
-  var imgs=(SITE_BANNERS.heroes||[]).filter(function(u){return u;});
+  var imgs=(typeof HERO_FILES!=="undefined"&&HERO_FILES.length)?HERO_FILES.slice():(SITE_BANNERS.heroes||[]).filter(function(u){return u;});
   if(!imgs.length){ hero.style.display="none"; hero.innerHTML=""; return; }
   hero.style.display="block";
   if(imgs.length===1){ hero.innerHTML='<a href="#books" class="hc-slide on"><img src="'+escAttr(imgs[0])+'" alt="New arrivals"></a>'; return; }
-  var slides=imgs.map(function(u,i){return '<a href="#books" class="hc-slide'+(i===0?" on":"")+'"><img src="'+escAttr(u)+'" alt="Banner '+(i+1)+'"></a>';}).join("");
-  var dots=imgs.map(function(u,i){return '<span class="hc-dot'+(i===0?" on":"")+'" data-i="'+i+'"></span>';}).join("");
-  hero.innerHTML='<div class="hc">'+slides+'<button class="hc-prev" aria-label="Previous banner">‹</button><button class="hc-next" aria-label="Next banner">›</button><div class="hc-dots">'+dots+'</div></div>';
-  var root=hero.querySelector(".hc"), n=imgs.length, idx=0, timer=null;
-  var slideEls=root.querySelectorAll(".hc-slide"), dotEls=root.querySelectorAll(".hc-dot");
-  function go(i){ idx=((i%n)+n)%n; for(var k=0;k<n;k++){ slideEls[k].classList.toggle("on",k===idx); dotEls[k].classList.toggle("on",k===idx);} }
-  function start(){ stop(); timer=setInterval(function(){go(idx+1);},5000); }
-  function stop(){ if(timer){clearInterval(timer);timer=null;} }
-  root.querySelector(".hc-prev").addEventListener("click",function(e){e.preventDefault();e.stopPropagation();go(idx-1);start();});
-  root.querySelector(".hc-next").addEventListener("click",function(e){e.preventDefault();e.stopPropagation();go(idx+1);start();});
-  for(var di=0;di<dotEls.length;di++){ (function(el){el.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();go(parseInt(el.getAttribute("data-i"),10));start();});})(dotEls[di]); }
-  root.addEventListener("mouseenter",stop); root.addEventListener("mouseleave",start);
-  start();
-}
-window.applyBanners=applyBanners;
-function applyHow(){
-  if(SITE_HOW.eyebrow){var e=document.getElementById("howEyebrow");if(e)e.textContent=SITE_HOW.eyebrow;}
-  if(SITE_HOW.heading){var hd=document.getElementById("howHeading");if(hd)hd.textContent=SITE_HOW.heading;}
-  for(var i=0;i<4;i++){ var s=SITE_HOW.steps[i]; if(!s)continue;
-    if(s.title){var t=document.getElementById("howT"+(i+1));if(t)t.textContent=s.title;}
-    if(s.desc){var dn=document.getElementById("howD"+(i+1));if(dn)dn.textContent=s.desc;}
-  }
-}
-window.applyHow=applyHow;
-async function init(){
-  document.head.insertAdjacentHTML("beforeend","<style>"+PILOT_CSS+CHECKOUT_CSS+AC_CSS+GAL_CSS+"</style>");
-  loadPublicSettings();
-  const note=document.getElementById("srcnote");
-  if(SHEET_CSV_URL){
-    try{
-      const res=await fetch(SHEET_CSV_URL);
-      const parsed=booksFromCSV(await res.text());
-      if(parsed.length){BOOKS=normalize(parsed);note.textContent="Catalogue loaded live from Google Sheets.";}
-      else throw new Error("empty");
-    }catch(e){BOOKS=normalize(DEFAULT_BOOKS);note.textContent="Showing built-in catalogue.";}
-  }else{BOOKS=normalize(DEFAULT_BOOKS);}
-  loadSession();loadCart();buildFilters();render();updateCart();updateNavAuth();
-  setupAutocomplete();
-}
-["search","age","avail"].forEach(id=>document.getElementById(id).addEventListener("input",render));
-init();
+  var slides=imgs.map(function(u,i){return '
