@@ -23,11 +23,12 @@ const MAX_BOOKS       = 4;
 const PAYMENT_QR_URL  = "payment-qr.png";
 const PAYEE_NAME      = "Justin Tiew Senn · Maybank";
 
+/* Bukutopia brand-kit cover-box tints (soft pink, mint, cream, blue, yellow, coral) */
 const SERIES_COLORS = {
-  pink:["#f7b8c4","#ef94a6"], green:["#bfe3cf","#8fccb0"], blue:["#bcd9e8","#8fb9d6"],
-  orange:["#ffd49a","#f6a85f"], purple:["#cdbef0","#a98fdf"], yellow:["#ffe48f","#ffd21f"],
-  teal:["#bfe6e1","#8fcfc7"], red:["#f2a79a","#e9755c"], navy:["#5b7fb0","#103160"],
-  rose:["#f9cdd8","#f3a9bd"], plum:["#c3aee0","#9576c4"]
+  pink:["#fae4df","#f6cfc6"], green:["#e5f2f1","#cfe8e4"], blue:["#dce6f3","#bccde4"],
+  orange:["#f9e7cc","#f3d9b0"], purple:["#f9e7cc","#f3d9b0"], yellow:["#ffe9a3","#ffd96b"],
+  teal:["#e5f2f1","#cfe8e4"], red:["#f7d2c6","#f0ad97"], navy:["#dce6f3","#bccde4"],
+  rose:["#fae4df","#f6cfc6"], plum:["#e5f2f1","#cfe8e4"]
 };
 
 /* Extra styles for the per-book list + stacked cover (injected on load
@@ -354,7 +355,7 @@ function coverInner(s, book, stacked, count){
     : "";
   const nav = gallery ? `<button class="cov-nav cov-prev" onclick="galNav(this,-1)" aria-label="Previous page">‹</button><button class="cov-nav cov-next" onclick="galNav(this,1)" aria-label="Next page">›</button><span class="cov-count">1 / ${gallery.length}</span>` : "";
   const badge = (stacked && count) ? `<span class="stack-count">${count} books added</span>` : "";
-  return `<svg class="fl watermark"><use href="#leaf"/></svg>${badge}${img}${nav}${ph}<span class="price">RM${s.price}/book</span>${sold}`;
+  return `${badge}${img}${nav}${ph}<span class="price">RM${s.price}/book</span>${sold}`;
 }
 // Resting cover when not hovering: 2+ ADDED -> stacked (first book on top);
 // else the clicked/sticky book; else the first book.
