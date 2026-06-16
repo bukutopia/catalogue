@@ -1075,6 +1075,7 @@ function mergeSheetCatalogue(rows){
 var SITE_BANNERS={announce:"",heroes:[]};
 var SITE_HOW={eyebrow:"",heading:"",steps:[]};
 var HERO_FILES=["Hero_june.jpg?v=1"];
+var ANNOUNCE_FILE="Aannouncement_July.jpg?v=1";
 function buildBooksFromSheet(rows){
   if(!Array.isArray(rows)||!rows.length) return [];
   SITE_BANNERS={announce:"",heroes:[]};
@@ -1136,7 +1137,7 @@ async function loadPublicSettings(){
 }
 function applyBanners(){
   var a=document.getElementById("sbAnn"),ai=document.getElementById("sbAnnImg");
-  if(a&&ai){ if(SITE_BANNERS.announce){ ai.src=SITE_BANNERS.announce; a.style.display="block"; } else { a.style.display="none"; } }
+  if(a&&ai){ var _ann=(typeof ANNOUNCE_FILE!=="undefined"&&ANNOUNCE_FILE)?ANNOUNCE_FILE:SITE_BANNERS.announce; if(_ann){ ai.src=_ann; a.style.display="block"; } else { a.style.display="none"; } }
   var hero=document.getElementById("sbHero");
   if(!hero) return;
   var imgs=(typeof HERO_FILES!=="undefined"&&HERO_FILES.length)?HERO_FILES.slice():(SITE_BANNERS.heroes||[]).filter(function(u){return u;});
