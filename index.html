@@ -210,6 +210,8 @@
   .site-banners{display:flex;flex-direction:column;gap:0;background:var(--bg)}
   .sb-ann,.sb-hero{display:block;line-height:0;width:100%}
   .sb-ann img{width:100%;height:auto;display:block;max-height:87px;object-fit:cover}
+  .sb-ann.ann-text{display:block;text-align:center;text-decoration:none;background:var(--coral);color:#fff;font-family:'Playfair Display',serif;font-weight:600;text-transform:uppercase;letter-spacing:clamp(1px,0.45vw,5px);font-size:clamp(12px,2.3vw,26px);line-height:1.35;padding:16px 18px}
+  .sb-ann.ann-text .ann-free{background:var(--yellow);color:var(--navy);font-weight:800;padding:.02em .32em;border-radius:4px;letter-spacing:.06em;white-space:nowrap}
   .sb-hero img{width:100%;height:auto;display:block;max-height:610px;object-fit:cover}
   .sb-hero{position:relative}
   .hc{position:relative;width:100%;overflow:hidden}
@@ -276,7 +278,7 @@
   </div>
 </div></div>
 
-<a class="sb-ann" id="sbAnn" href="#books" style="display:none"><img id="sbAnnImg" alt="Announcement"></a>
+<a class="sb-ann ann-text" id="sbAnn" href="#books">Welcome special: <span class="ann-free">free</span> first month book rental</a>
 
 <section class="site-banners">
   <div class="sb-hero" id="sbHero" style="display:none"></div>
