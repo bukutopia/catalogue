@@ -1076,7 +1076,7 @@ function mergeSheetCatalogue(rows){
 var SITE_BANNERS={announce:"",heroes:[]};
 var SITE_HOW={eyebrow:"",heading:"",steps:[]};
 var SITE_FAQ={eyebrow:"",heading:"",items:[]};
-var HERO_FILES=["Hero_june.jpg?v=1"];
+var HERO_FILES=[]; /* empty = hero is driven by the back-office upload (Settings > Homepage banners). Put a repo filename here to override with a full-res file. */
 var ANNOUNCE_FILE="Aannouncement_July.jpg?v=1";
 function buildBooksFromSheet(rows){
   if(!Array.isArray(rows)||!rows.length) return [];
