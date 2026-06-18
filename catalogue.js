@@ -1075,22 +1075,29 @@ function mergeSheetCatalogue(rows){
 // in the back office all reflect here, because the list is rebuilt from the sheet each load.
 var SITE_BANNERS={announce:"",heroes:[]};
 var SITE_HOW={eyebrow:"",heading:"",steps:[]};
+var SITE_FAQ={eyebrow:"",heading:"",items:[]};
 var HERO_FILES=["Hero_june.jpg?v=1"];
 var ANNOUNCE_FILE="Aannouncement_July.jpg?v=1";
 function buildBooksFromSheet(rows){
   if(!Array.isArray(rows)||!rows.length) return [];
   SITE_BANNERS={announce:"",heroes:[]};
   SITE_HOW={eyebrow:"",heading:"",steps:[]};
+  SITE_FAQ={eyebrow:"",heading:"",items:[]};
   var order=[], map={};
   rows.forEach(function(r){
     var series=String(r.series||"").trim();
     var isbn=String(r.isbn||"").trim();
-    if(series==="__SITE__" || /^__(banner|how)_/.test(isbn)){
+    if(series==="__SITE__" || /^__(banner|how|faq)_/.test(isbn)){
       var _v=_ne(r.imgCover)?String(r.imgCover).trim():"";
+      var _t=_ne(r.title)?String(r.title).trim():"";
+      var _d=_ne(r.book_description)?String(r.book_description).trim():"";
+      var _sd=_ne(r.series_description)?String(r.series_description).trim():"";
       if(/^__banner_announce__$/.test(isbn)) SITE_BANNERS.announce=_v;
       else if(/^__banner_hero(\d*)__$/.test(isbn)){ var _m=isbn.match(/^__banner_hero(\d*)__$/); var _n=_m[1]?parseInt(_m[1],10):1; SITE_BANNERS.heroes[_n-1]=_v; }
-      else if(isbn==="__how_head__"){ SITE_HOW.eyebrow=_ne(r.series_description)?String(r.series_description).trim():""; SITE_HOW.heading=_ne(r.book_description)?String(r.book_description).trim():""; }
-      else { var _hm=isbn.match(/^__how_([1-4])__$/); if(_hm){ SITE_HOW.steps[parseInt(_hm[1],10)-1]={title:_ne(r.title)?String(r.title).trim():"",desc:_ne(r.book_description)?String(r.book_description).trim():""}; } }
+      else if(isbn==="__how_head__"){ SITE_HOW.eyebrow=_sd; SITE_HOW.heading=_d; }
+      else if(/^__how_[1-4]__$/.test(isbn)){ var _hm=isbn.match(/^__how_([1-4])__$/); SITE_HOW.steps[parseInt(_hm[1],10)-1]={title:_t,desc:_d}; }
+      else if(isbn==="__faq_head__"){ SITE_FAQ.eyebrow=_sd; SITE_FAQ.heading=_d; }
+      else if(/^__faq_[1-6]__$/.test(isbn)){ var _fm=isbn.match(/^__faq_([1-6])__$/); SITE_FAQ.items[parseInt(_fm[1],10)-1]={q:_t,a:_d}; }
       return;
     }
     if(!_ne(r.title) && !isbn) return;
@@ -1133,6 +1140,7 @@ async function loadPublicSettings(){
       if(built.length){ BOOKS=built; try{buildFilters();}catch(e){} try{render();}catch(e){} }
       try{applyBanners();}catch(e){}
       try{applyHow();}catch(e){}
+      try{applyFaq();}catch(e){}
     }
   }catch(e){}
 }
@@ -1169,6 +1177,15 @@ function applyHow(){
   }
 }
 window.applyHow=applyHow;
+function applyFaq(){
+  if(SITE_FAQ.eyebrow){var e=document.getElementById("faqEyebrow");if(e)e.textContent=SITE_FAQ.eyebrow;}
+  if(SITE_FAQ.heading){var hd=document.getElementById("faqHeading");if(hd)hd.textContent=SITE_FAQ.heading;}
+  for(var i=0;i<6;i++){ var it=SITE_FAQ.items[i]; if(!it)continue;
+    if(it.q){var q=document.getElementById("faqQ"+(i+1));if(q)q.textContent=it.q;}
+    if(it.a){var an=document.getElementById("faqA"+(i+1));if(an)an.textContent=it.a;}
+  }
+}
+window.applyFaq=applyFaq;
 async function init(){
   document.head.insertAdjacentHTML("beforeend","<style>"+PILOT_CSS+CHECKOUT_CSS+AC_CSS+GAL_CSS+"</style>");
   loadPublicSettings();
