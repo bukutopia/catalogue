@@ -787,8 +787,10 @@ function stepConfirm(){
 function stepPay(order){
   const ref=String(order.id).slice(0,4).toUpperCase();
   const deposit=order.type==="deposit";
-  const msg=`Hi Bukutopia! 📚 Order ${ref} — ${order.titles}. I'm paying ${money(order.amount)} `+
-    `(${deposit?"refundable deposit, first month free":"rental checkout"}). My payment receipt is attached. 🙏`;
+  const typeText=deposit?"refundable deposit, first month free":"rental checkout";
+  const tpl=(typeof SITE_MSGS!=="undefined"&&SITE_MSGS.checkout)?SITE_MSGS.checkout
+    :"Hi Bukutopia! 📚 Order {ref} — {titles}. I'm paying {amount} ({type}). My payment receipt is attached. 🙏";
+  const msg=tpl.replace(/\{ref\}/g,ref).replace(/\{titles\}/g,order.titles).replace(/\{amount\}/g,money(order.amount)).replace(/\{type\}/g,typeText);
   const link=`https://wa.me/${waNum()}?text=${encodeURIComponent(msg)}`;
   show(`<h3 class="co-h">Order placed — ref ${ref} 🎉</h3>
     <p class="co-sub">To complete checkout, pay and send us your receipt on WhatsApp <b>within 24 hours</b>. Unpaid orders are released automatically after that.</p>
@@ -1090,6 +1092,7 @@ function mergeSheetCatalogue(rows){
 var SITE_BANNERS={announce:"",heroes:[]};
 var SITE_HOW={eyebrow:"",heading:"",steps:[]};
 var SITE_FAQ={eyebrow:"",heading:"",items:[]};
+var SITE_MSGS={checkout:""};
 var HERO_FILES=["Hero%20JUNE.jpg?v=1"]; /* full-res repo file overrides the back-office upload. Set to [] to let the back office (Settings > Homepage banners) drive the hero instead. */
 var ANNOUNCE_FILE="Aannouncement_July.jpg?v=1";
 function buildBooksFromSheet(rows){
@@ -1097,11 +1100,12 @@ function buildBooksFromSheet(rows){
   SITE_BANNERS={announce:"",heroes:[]};
   SITE_HOW={eyebrow:"",heading:"",steps:[]};
   SITE_FAQ={eyebrow:"",heading:"",items:[]};
+  SITE_MSGS={checkout:""};
   var order=[], map={};
   rows.forEach(function(r){
     var series=String(r.series||"").trim();
     var isbn=String(r.isbn||"").trim();
-    if(series==="__SITE__" || /^__(banner|how|faq)_/.test(isbn)){
+    if(series==="__SITE__" || /^__(banner|how|faq|msg)_/.test(isbn)){
       var _v=_ne(r.imgCover)?String(r.imgCover).trim():"";
       var _t=_ne(r.title)?String(r.title).trim():"";
       var _d=_ne(r.book_description)?String(r.book_description).trim():"";
@@ -1112,6 +1116,7 @@ function buildBooksFromSheet(rows){
       else if(/^__how_[1-4]__$/.test(isbn)){ var _hm=isbn.match(/^__how_([1-4])__$/); SITE_HOW.steps[parseInt(_hm[1],10)-1]={title:_t,desc:_d}; }
       else if(isbn==="__faq_head__"){ SITE_FAQ.eyebrow=_sd; SITE_FAQ.heading=_d; }
       else if(/^__faq_[1-7]__$/.test(isbn)){ var _fm=isbn.match(/^__faq_([1-7])__$/); SITE_FAQ.items[parseInt(_fm[1],10)-1]={q:_t,a:_d}; }
+      else if(isbn==="__msg_checkout__"){ SITE_MSGS.checkout=_d; }
       return;
     }
     if(!_ne(r.title) && !isbn) return;
