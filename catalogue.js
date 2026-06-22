@@ -521,7 +521,9 @@ const CHECKOUT_CSS=`
 #coModal .co-pick{display:flex;align-items:flex-start;gap:9px;padding:8px 0;border-bottom:1px dashed #eadfca;font-size:14px;color:#243447;cursor:pointer}
 #coModal .co-pick input{margin-top:3px;width:17px;height:17px;accent-color:#103160;flex:0 0 auto}
 #coModal .co-pickcount{font-size:13px;font-weight:700;color:#103160;margin:8px 0 0}
-#coModal .co-pickcount.over{color:#c0503a}`;
+#coModal .co-pickcount.over{color:#c0503a}
+#coModal .co-forgot{display:inline-block;margin-top:9px;font-size:12.5px;font-weight:700;color:#e9755c;text-decoration:underline;cursor:pointer}
+#coModal .co-forgot:hover{color:#d15e45}`;
 
 const modalBg=document.getElementById("modalBg");
 const coModal=document.getElementById("coModal");
@@ -663,11 +665,12 @@ function stepAccount(){
   let mode="login";
   const form=coModal.querySelector("#coForm"), err=coModal.querySelector("#coErr");
   const loginForm=`<label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789">
-    <label>Passcode</label><input id="f_pass" type="password" placeholder="Your passcode">`;
+    <label>Password</label><input id="f_pass" type="password" placeholder="Your password">
+    <a class="co-forgot" target="_blank" rel="noopener" href="https://wa.me/${waNum()}?text=${encodeURIComponent("Hi Bukutopia! 📚 I forgot my account password and need help logging in. My WhatsApp number is: ")}">Forgot password?</a>`;
   const signupForm=`<label>Your name</label><input id="f_name" placeholder="Full name">
     <label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789">
     <label>Delivery address</label><input id="f_addr" placeholder="Unit, street, postcode">
-    <label>Choose a passcode</label><input id="f_pass" type="password" placeholder="At least 4 characters">`;
+    <label>Choose a password</label><input id="f_pass" type="password" placeholder="At least 4 characters">`;
   function paint(){form.innerHTML=mode==="login"?loginForm:signupForm;err.textContent="";}
   paint();
   coModal.querySelector("#tabLogin").onclick=()=>{mode="login";coModal.querySelector("#tabLogin").classList.add("on");coModal.querySelector("#tabSignup").classList.remove("on");paint();};
@@ -683,7 +686,7 @@ function stepAccount(){
     const g=id=>{const el=coModal.querySelector(id);return el?el.value.trim():"";};
     const phone=g("#f_phone"), pass=g("#f_pass");
     const name=mode==="signup"?g("#f_name"):"", addr=mode==="signup"?g("#f_addr"):"";
-    if(!phone||!pass){err.textContent="Please fill in your number and passcode.";return;}
+    if(!phone||!pass){err.textContent="Please fill in your number and password.";return;}
     if(mode==="signup"&&(!name||!addr)){err.textContent="Please fill in your name and delivery address.";return;}
     if(!confirmed){
       confBox.hidden=false;
@@ -847,11 +850,12 @@ function accountForm(onSuccess){
   let mode="login";
   const form=coModal.querySelector("#coForm"), err=coModal.querySelector("#coErr");
   const loginForm=`<label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789">
-    <label>Passcode</label><input id="f_pass" type="password" placeholder="Your passcode">`;
+    <label>Password</label><input id="f_pass" type="password" placeholder="Your password">
+    <a class="co-forgot" target="_blank" rel="noopener" href="https://wa.me/${waNum()}?text=${encodeURIComponent("Hi Bukutopia! 📚 I forgot my account password and need help logging in. My WhatsApp number is: ")}">Forgot password?</a>`;
   const signupForm=`<label>Your name</label><input id="f_name" placeholder="Full name">
     <label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789">
     <label>Delivery address</label><input id="f_addr" placeholder="Unit, street, postcode">
-    <label>Choose a passcode</label><input id="f_pass" type="password" placeholder="At least 4 characters">`;
+    <label>Choose a password</label><input id="f_pass" type="password" placeholder="At least 4 characters">`;
   function paint(){form.innerHTML=mode==="login"?loginForm:signupForm;err.textContent="";}
   paint();
   coModal.querySelector("#tabLogin").onclick=()=>{mode="login";coModal.querySelector("#tabLogin").classList.add("on");coModal.querySelector("#tabSignup").classList.remove("on");paint();};
@@ -861,7 +865,7 @@ function accountForm(onSuccess){
     const g=id=>{const el=coModal.querySelector(id);return el?el.value.trim():"";};
     const phone=g("#f_phone"), pass=g("#f_pass");
     const name=mode==="signup"?g("#f_name"):"", addr=mode==="signup"?g("#f_addr"):"";
-    if(!phone||!pass){err.textContent="Please fill in your number and passcode.";return;}
+    if(!phone||!pass){err.textContent="Please fill in your number and password.";return;}
     if(mode==="signup"&&(!name||!addr)){err.textContent="Please fill in your name and delivery address.";return;}
     err.textContent="Please wait…";
     try{
