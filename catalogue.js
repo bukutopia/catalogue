@@ -740,7 +740,6 @@ function stepAccount(){
     if(pass.length<4){err.textContent="Password must be at least 4 characters.";return;}
     if(mode==="signup"&&(!name||!addr||!email)){err.textContent="Please fill in your name, email and delivery address.";return;}
     if(mode==="signup"&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){err.textContent="Please enter a valid email address.";return;}
-    if(mode==="signup"&&!inServiceArea(addr)){captureLead(name,phone,addr);err.textContent="";confBox.hidden=false;confBox.innerHTML=`<b>${OUT_OF_AREA_MSG}</b>`;resetConfirm();return;}
     if(!confirmed){
       confBox.hidden=false;
       confBox.innerHTML=`<b>Please double-check these are correct 👇</b><br>📱 WhatsApp: <b>${esc(phone)}</b>`+
@@ -824,11 +823,18 @@ function stepConfirm(){
         err.textContent=res.error;return;
       }
       cart.clear();updateCart();render();
+      if(res.outOfArea){ stepOutOfArea(res.order); return; }
       stepPay(res.order);
     }catch(e){err.textContent="Couldn't place the order. Please try again.";}
   };
 }
 
+function stepOutOfArea(order){
+  show(`<h3 class="co-h">You're on the list 💛</h3>
+    <p class="co-sub">We don't deliver to your area just yet — but we've saved your details and your book picks${order&&order.titles?` (${esc(order.titles)})`:""}. We'll message you the moment Bukutopia launches near you. No payment needed now.</p>
+    <div class="co-row"><button class="btn-wa" id="coBack" style="flex:1;justify-content:center">Got it</button></div>`);
+  coModal.querySelector("#coBack").onclick=closeCheckout;
+}
 function stepPay(order){
   const ref=String(order.id).slice(0,4).toUpperCase();
   const deposit=order.type==="deposit";
@@ -925,7 +931,6 @@ function accountForm(onSuccess){
     if(pass.length<4){err.textContent="Password must be at least 4 characters.";return;}
     if(mode==="signup"&&(!name||!addr||!email)){err.textContent="Please fill in your name, email and delivery address.";return;}
     if(mode==="signup"&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){err.textContent="Please enter a valid email address.";return;}
-    if(mode==="signup"&&!inServiceArea(addr)){captureLead(name,phone,addr);err.textContent=OUT_OF_AREA_MSG;return;}
     err.textContent="Please wait…";
     try{
       const res = mode==="login"
