@@ -523,12 +523,16 @@ const CHECKOUT_CSS=`
 #coModal .co-pickcount{font-size:13px;font-weight:700;color:#103160;margin:8px 0 0}
 #coModal .co-pickcount.over{color:#c0503a}
 #coModal .co-forgot{display:inline-block;margin-top:9px;font-size:12.5px;font-weight:700;color:#e9755c;text-decoration:underline;cursor:pointer}
-#coModal .co-forgot:hover{color:#d15e45}`;
+#coModal .co-forgot:hover{color:#d15e45}
+#coModal{position:relative}
+#coModal .co-x{position:absolute;top:8px;right:10px;width:30px;height:30px;border:none;background:none;font-size:17px;line-height:1;color:#9aa6b8;cursor:pointer;border-radius:8px}
+#coModal .co-x:hover{background:#f1ece2;color:#103160}`;
 
 const modalBg=document.getElementById("modalBg");
 const coModal=document.getElementById("coModal");
 function closeCheckout(){modalBg.classList.remove("show");}
-modalBg.addEventListener("click",e=>{if(e.target===modalBg)closeCheckout();});
+// Clicking the dimmed backdrop no longer closes the modal — prevents losing entered details by accident. Use the ✕ or Cancel/Back.
+window.closeCheckout=closeCheckout;
 document.getElementById("btnOrder").addEventListener("click",openCheckout);
 
 let session=null;     // {accountId, whatsapp, passcode, name, firstOrder}
@@ -550,7 +554,7 @@ async function apiPub(action,payload){
     body:JSON.stringify(Object.assign({action},payload||{}))});
   return r.json();
 }
-function show(html){coModal.innerHTML=html;modalBg.classList.add("show");}
+function show(html){coModal.innerHTML='<button type="button" class="co-x" aria-label="Close" onclick="closeCheckout()">✕</button>'+html;modalBg.classList.add("show");}
 
 // --- Service area gate + out-of-area lead capture ---
 var COVERED_AREAS=["fennel","brightton"]; // address must contain one of these (case-insensitive)
@@ -624,10 +628,33 @@ function stepReview(){
       <button class="btn-clear" id="coSignup" style="flex:1">New? Sign up</button>
       <button class="btn-wa" id="coLogin" style="flex:1.4;justify-content:center">Log in</button>
     </div>
-    <div style="text-align:right;margin-top:2px"><a class="co-forgot" target="_blank" rel="noopener" href="https://wa.me/${waNum()}?text=${encodeURIComponent("Hi Bukutopia! 📚 I forgot my account password and need help logging in. My WhatsApp number is: ")}">Forgot password?</a></div>`);
+    <div style="text-align:right;margin-top:2px"><a class="co-forgot" href="#" onclick="stepForgot();return false;">Forgot password?</a></div>`);
   coModal.querySelector("#coSignup").onclick=()=>{pendingAuthMode="signup";stepAvailability();};
   coModal.querySelector("#coLogin").onclick=()=>{pendingAuthMode="login";stepAvailability();};
 }
+
+// Forgot-password: enter WhatsApp number, we email a reset link to the address on file.
+function stepForgot(){
+  show(`<h3 class="co-h">We're here to help</h3>
+    <p class="co-sub">Enter your WhatsApp number and we'll email a password reset link to the address on your account.</p>
+    <label>WhatsApp number</label><input id="f_rphone" inputmode="numeric" placeholder="60123456789">
+    <div class="co-err" id="coErr"></div>
+    <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Cancel</button>
+      <button class="btn-wa" id="coGo" style="flex:1.4;justify-content:center">Submit</button></div>`);
+  const err=coModal.querySelector("#coErr");
+  coModal.querySelector("#coBack").onclick=stepAccount;
+  coModal.querySelector("#coGo").onclick=async()=>{
+    const phone=(coModal.querySelector("#f_rphone").value||"").trim();
+    if(!phone){err.textContent="Please enter your WhatsApp number.";return;}
+    err.textContent="Sending…";
+    try{ await apiPub("requestReset",{whatsapp:phone}); }catch(e){}
+    show(`<h3 class="co-h">Check your email 📧</h3>
+      <p class="co-sub">If an account with that number has an email on file, we've just sent a password reset link. It's valid for 30 minutes — please check your inbox (and spam folder).</p>
+      <div class="co-row"><button class="btn-wa" id="coBack" style="flex:1;justify-content:center">Done</button></div>`);
+    coModal.querySelector("#coBack").onclick=stepAccount;
+  };
+}
+window.stepForgot=stepForgot;
 
 function markBookUnavailable(isbn,key){
   const title=key?String(key).split(" :: ")[1]:"";
@@ -688,7 +715,7 @@ function stepAccount(){
   const form=coModal.querySelector("#coForm"), err=coModal.querySelector("#coErr");
   const loginForm=`<label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789">
     <label>Password</label><input id="f_pass" type="password" placeholder="Your password">
-    <a class="co-forgot" target="_blank" rel="noopener" href="https://wa.me/${waNum()}?text=${encodeURIComponent("Hi Bukutopia! 📚 I forgot my account password and need help logging in. My WhatsApp number is: ")}">Forgot password?</a>`;
+    <a class="co-forgot" href="#" onclick="stepForgot();return false;">Forgot password?</a>`;
   const signupForm=`<label>Your name</label><input id="f_name" placeholder="Full name">
     <label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789">
     <label>Email</label><input id="f_email" type="email" inputmode="email" placeholder="you@example.com">
@@ -879,7 +906,7 @@ function accountForm(onSuccess){
   const form=coModal.querySelector("#coForm"), err=coModal.querySelector("#coErr");
   const loginForm=`<label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789">
     <label>Password</label><input id="f_pass" type="password" placeholder="Your password">
-    <a class="co-forgot" target="_blank" rel="noopener" href="https://wa.me/${waNum()}?text=${encodeURIComponent("Hi Bukutopia! 📚 I forgot my account password and need help logging in. My WhatsApp number is: ")}">Forgot password?</a>`;
+    <a class="co-forgot" href="#" onclick="stepForgot();return false;">Forgot password?</a>`;
   const signupForm=`<label>Your name</label><input id="f_name" placeholder="Full name">
     <label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789">
     <label>Email</label><input id="f_email" type="email" inputmode="email" placeholder="you@example.com">

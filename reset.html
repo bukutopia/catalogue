@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reset password — Bukutopia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root{--navy:#103160;--coral:#e9755c;--coral-dark:#d15e45;--cream:#f9e7cc;--bg:#FFFDF8;--line:#EEE1CE;--muted:#7C879B}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+    font-family:'Nunito',system-ui,sans-serif;background:var(--bg);color:var(--navy)}
+  .card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 10px 34px rgba(16,49,96,.12);
+    max-width:420px;width:100%;padding:30px 26px}
+  h1{font-family:'Playfair Display',serif;font-size:24px;margin:0 0 6px}
+  p.sub{color:var(--muted);font-size:14px;margin:0 0 20px;line-height:1.5}
+  label{display:block;font-size:13px;font-weight:800;margin:14px 0 5px}
+  input{width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:11px;font-family:inherit;font-size:15px;color:var(--navy)}
+  button{width:100%;margin-top:20px;border:none;border-radius:12px;padding:13px;font-family:inherit;font-weight:800;font-size:16px;
+    background:var(--coral);color:#fff;cursor:pointer}
+  button:hover{background:var(--coral-dark)}
+  button:disabled{opacity:.55;cursor:default}
+  .msg{font-size:14px;margin-top:14px;min-height:18px;line-height:1.5}
+  .msg.err{color:#c0392b}
+  .msg.ok{color:#1f8a4c}
+  a.home{display:inline-block;margin-top:18px;color:var(--coral);font-weight:700;text-decoration:underline}
+  .hide{display:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Set a new password</h1>
+  <p class="sub" id="sub">Choose a new password for your Bukutopia account.</p>
+  <div id="form">
+    <label for="p1">New password</label>
+    <input id="p1" type="password" placeholder="At least 4 characters" autocomplete="new-password">
+    <label for="p2">Confirm new password</label>
+    <input id="p2" type="password" placeholder="Re-enter password" autocomplete="new-password">
+    <button id="go">Reset password</button>
+    <div class="msg" id="msg"></div>
+  </div>
+  <div id="done" class="hide">
+    <div class="msg ok">✅ Your password has been reset. You can now log in with your new password.</div>
+    <a class="home" href="https://bukutopia.github.io/catalogue/">Back to Bukutopia →</a>
+  </div>
+</div>
+<script>
+  var API_URL="https://script.google.com/macros/s/AKfycbyVHxD4ZJXuUwvp8Q0q5JnMFCGmF2Rqwb2BwUJTjNaJyhq14pqXWwLP2_klILWRR2g/exec";
+  var token=new URLSearchParams(location.search).get("token")||"";
+  var msg=document.getElementById("msg"), go=document.getElementById("go");
+  if(!token){
+    document.getElementById("form").classList.add("hide");
+    document.getElementById("sub").innerHTML='<span style="color:#c0392b">This reset link is missing or invalid. Please request a new one from the login screen.</span>';
+  }
+  function show(t,cls){msg.textContent=t;msg.className="msg"+(cls?" "+cls:"");}
+  go && (go.onclick=async function(){
+    var p1=document.getElementById("p1").value, p2=document.getElementById("p2").value;
+    if(p1.length<4){show("Password must be at least 4 characters.","err");return;}
+    if(p1!==p2){show("The two passwords don't match.","err");return;}
+    go.disabled=true; show("Saving…");
+    try{
+      var r=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+        body:JSON.stringify({action:"resetPassword",token:token,passcode:p1})});
+      var j=await r.json();
+      if(j.error){show(j.error,"err");go.disabled=false;return;}
+      document.getElementById("form").classList.add("hide");
+      document.getElementById("done").classList.remove("hide");
+      document.getElementById("sub").textContent="All done!";
+    }catch(e){show("Couldn't connect. Please try again.","err");go.disabled=false;}
+  });
+</script>
+</body>
+</html>
