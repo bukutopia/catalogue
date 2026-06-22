@@ -601,16 +601,32 @@ function legacyWhatsApp(){
 
 function liRows(){return coItems.map(it=>`<div class="co-li">${esc(it.title)} <span>— ${esc(it.series)}</span></div>`).join("");}
 
+var pendingAuthMode="login"; // which tab the "Almost there" screen opens on, set by the book-list gate
 function stepReview(){
+  // Logged-in customers keep the simple review + checkout.
+  if(session){
+    show(`<h3 class="co-h">Your book list</h3>
+      <p class="co-sub">${coItems.length} of ${MAX_BOOKS} books. We'll check they're all available, then set up your order.</p>
+      <div class="co-list">${liRows()}</div>
+      <div class="co-row">
+        <button class="btn-clear" id="coBack" style="flex:1">Keep browsing</button>
+        <button class="btn-wa" id="coNext" style="flex:1.4;justify-content:center">Check out</button>
+      </div>`);
+    coModal.querySelector("#coBack").onclick=closeCheckout;
+    coModal.querySelector("#coNext").onclick=stepAvailability;
+    return;
+  }
+  // Not logged in → gate on login / sign up.
   show(`<h3 class="co-h">Your book list</h3>
-    <p class="co-sub">${coItems.length} of ${MAX_BOOKS} books. We'll check they're all available, then set up your order.</p>
+    <p class="co-sub">Please log in to proceed:</p>
     <div class="co-list">${liRows()}</div>
     <div class="co-row">
-      <button class="btn-clear" id="coBack" style="flex:1">Keep browsing</button>
-      <button class="btn-wa" id="coNext" style="flex:1.4;justify-content:center">Check out</button>
-    </div>`);
-  coModal.querySelector("#coBack").onclick=closeCheckout;
-  coModal.querySelector("#coNext").onclick=stepAvailability;
+      <button class="btn-clear" id="coSignup" style="flex:1">New? Sign up</button>
+      <button class="btn-wa" id="coLogin" style="flex:1.4;justify-content:center">Log in</button>
+    </div>
+    <div style="text-align:right;margin-top:2px"><a class="co-forgot" target="_blank" rel="noopener" href="https://wa.me/${waNum()}?text=${encodeURIComponent("Hi Bukutopia! 📚 I forgot my account password and need help logging in. My WhatsApp number is: ")}">Forgot password?</a></div>`);
+  coModal.querySelector("#coSignup").onclick=()=>{pendingAuthMode="signup";stepAvailability();};
+  coModal.querySelector("#coLogin").onclick=()=>{pendingAuthMode="login";stepAvailability();};
 }
 
 function markBookUnavailable(isbn,key){
@@ -661,14 +677,14 @@ async function stepAvailability(){
 
 function stepAccount(){
   if(session){return stepConfirm();}
+  let mode=(typeof pendingAuthMode!=="undefined"&&pendingAuthMode==="signup")?"signup":"login";
   show(`<h3 class="co-h">Almost there</h3>
     <p class="co-sub">Log in or create your account to place the order.</p>
-    <div class="co-tabs"><button class="co-tab on" id="tabLogin">I have an account</button>
-      <button class="co-tab" id="tabSignup">Create account</button></div>
+    <div class="co-tabs"><button class="co-tab ${mode==="login"?"on":""}" id="tabLogin">I have an account</button>
+      <button class="co-tab ${mode==="signup"?"on":""}" id="tabSignup">Create account</button></div>
     <div id="coForm"></div><div class="co-confirm" id="coConfirm" hidden></div><div class="co-err" id="coErr"></div>
     <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Back</button>
       <button class="btn-wa" id="coGo" style="flex:1.4;justify-content:center">Continue</button></div>`);
-  let mode="login";
   const form=coModal.querySelector("#coForm"), err=coModal.querySelector("#coErr");
   const loginForm=`<label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789">
     <label>Password</label><input id="f_pass" type="password" placeholder="Your password">
