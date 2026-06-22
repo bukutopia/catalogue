@@ -552,6 +552,12 @@ async function apiPub(action,payload){
 }
 function show(html){coModal.innerHTML=html;modalBg.classList.add("show");}
 
+// --- Service area gate + out-of-area lead capture ---
+var COVERED_AREAS=["fennel","brightton"]; // address must contain one of these (case-insensitive)
+function inServiceArea(addr){addr=String(addr||"").toLowerCase();return COVERED_AREAS.some(function(k){return addr.indexOf(k)>=0;});}
+var OUT_OF_AREA_MSG="Sorry, we don't cover your area just yet 💛 We've saved your details and will message you the moment we do.";
+async function captureLead(name,phone,addr){try{await apiPub("waitlist",{name:name||"",whatsapp:phone,address:addr});}catch(e){}}
+
 function stepTrimCart(){
   function draw(){
     const n=cart.size, ok=n>=1&&n<=MAX_BOOKS;
@@ -687,7 +693,9 @@ function stepAccount(){
     const phone=g("#f_phone"), pass=g("#f_pass");
     const name=mode==="signup"?g("#f_name"):"", addr=mode==="signup"?g("#f_addr"):"";
     if(!phone||!pass){err.textContent="Please fill in your number and password.";return;}
+    if(pass.length<4){err.textContent="Password must be at least 4 characters.";return;}
     if(mode==="signup"&&(!name||!addr)){err.textContent="Please fill in your name and delivery address.";return;}
+    if(mode==="signup"&&!inServiceArea(addr)){captureLead(name,phone,addr);err.textContent="";confBox.hidden=false;confBox.innerHTML=`<b>${OUT_OF_AREA_MSG}</b>`;resetConfirm();return;}
     if(!confirmed){
       confBox.hidden=false;
       confBox.innerHTML=`<b>Please double-check these are correct 👇</b><br>📱 WhatsApp: <b>${esc(phone)}</b>`+
@@ -866,7 +874,9 @@ function accountForm(onSuccess){
     const phone=g("#f_phone"), pass=g("#f_pass");
     const name=mode==="signup"?g("#f_name"):"", addr=mode==="signup"?g("#f_addr"):"";
     if(!phone||!pass){err.textContent="Please fill in your number and password.";return;}
+    if(pass.length<4){err.textContent="Password must be at least 4 characters.";return;}
     if(mode==="signup"&&(!name||!addr)){err.textContent="Please fill in your name and delivery address.";return;}
+    if(mode==="signup"&&!inServiceArea(addr)){captureLead(name,phone,addr);err.textContent=OUT_OF_AREA_MSG;return;}
     err.textContent="Please wait…";
     try{
       const res = mode==="login"
