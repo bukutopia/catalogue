@@ -691,6 +691,7 @@ function stepAccount(){
     <a class="co-forgot" target="_blank" rel="noopener" href="https://wa.me/${waNum()}?text=${encodeURIComponent("Hi Bukutopia! 📚 I forgot my account password and need help logging in. My WhatsApp number is: ")}">Forgot password?</a>`;
   const signupForm=`<label>Your name</label><input id="f_name" placeholder="Full name">
     <label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789">
+    <label>Email</label><input id="f_email" type="email" inputmode="email" placeholder="you@example.com">
     <label>Delivery address</label><input id="f_addr" placeholder="Unit, street, postcode">
     <label>Choose a password</label><input id="f_pass" type="password" placeholder="At least 4 characters">`;
   function paint(){form.innerHTML=mode==="login"?loginForm:signupForm;err.textContent="";}
@@ -707,15 +708,16 @@ function stepAccount(){
   goBtn.onclick=async()=>{
     const g=id=>{const el=coModal.querySelector(id);return el?el.value.trim():"";};
     const phone=g("#f_phone"), pass=g("#f_pass");
-    const name=mode==="signup"?g("#f_name"):"", addr=mode==="signup"?g("#f_addr"):"";
+    const name=mode==="signup"?g("#f_name"):"", addr=mode==="signup"?g("#f_addr"):"", email=mode==="signup"?g("#f_email"):"";
     if(!phone||!pass){err.textContent="Please fill in your number and password.";return;}
     if(pass.length<4){err.textContent="Password must be at least 4 characters.";return;}
-    if(mode==="signup"&&(!name||!addr)){err.textContent="Please fill in your name and delivery address.";return;}
+    if(mode==="signup"&&(!name||!addr||!email)){err.textContent="Please fill in your name, email and delivery address.";return;}
+    if(mode==="signup"&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){err.textContent="Please enter a valid email address.";return;}
     if(mode==="signup"&&!inServiceArea(addr)){captureLead(name,phone,addr);err.textContent="";confBox.hidden=false;confBox.innerHTML=`<b>${OUT_OF_AREA_MSG}</b>`;resetConfirm();return;}
     if(!confirmed){
       confBox.hidden=false;
       confBox.innerHTML=`<b>Please double-check these are correct 👇</b><br>📱 WhatsApp: <b>${esc(phone)}</b>`+
-        (mode==="signup"?`<br>📦 Delivery address: <b>${esc(addr)}</b>`:"")+
+        (mode==="signup"?`<br>✉️ Email: <b>${esc(email)}</b><br>📦 Delivery address: <b>${esc(addr)}</b>`:"")+
         `<br><span style="color:#7c879b">We'll deliver here and message you on this number.</span>`;
       confirmed=true; goBtn.textContent="Yes, that's correct"; return;
     }
@@ -723,7 +725,7 @@ function stepAccount(){
     try{
       let res;
       if(mode==="login") res=await apiPub("login",{whatsapp:phone,passcode:pass});
-      else res=await apiPub("signup",{name,whatsapp:phone,address:addr,passcode:pass});
+      else res=await apiPub("signup",{name,email,whatsapp:phone,address:addr,passcode:pass});
       if(res.error){err.textContent=res.error;resetConfirm();return;}
       session={accountId:res.accountId,whatsapp:phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};session.hasPending=!!(res.pending&&res.pending.length);saveSession();
       updateNavAuth();
@@ -880,6 +882,7 @@ function accountForm(onSuccess){
     <a class="co-forgot" target="_blank" rel="noopener" href="https://wa.me/${waNum()}?text=${encodeURIComponent("Hi Bukutopia! 📚 I forgot my account password and need help logging in. My WhatsApp number is: ")}">Forgot password?</a>`;
   const signupForm=`<label>Your name</label><input id="f_name" placeholder="Full name">
     <label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789">
+    <label>Email</label><input id="f_email" type="email" inputmode="email" placeholder="you@example.com">
     <label>Delivery address</label><input id="f_addr" placeholder="Unit, street, postcode">
     <label>Choose a password</label><input id="f_pass" type="password" placeholder="At least 4 characters">`;
   function paint(){form.innerHTML=mode==="login"?loginForm:signupForm;err.textContent="";}
@@ -890,16 +893,17 @@ function accountForm(onSuccess){
   coModal.querySelector("#coGo").onclick=async()=>{
     const g=id=>{const el=coModal.querySelector(id);return el?el.value.trim():"";};
     const phone=g("#f_phone"), pass=g("#f_pass");
-    const name=mode==="signup"?g("#f_name"):"", addr=mode==="signup"?g("#f_addr"):"";
+    const name=mode==="signup"?g("#f_name"):"", addr=mode==="signup"?g("#f_addr"):"", email=mode==="signup"?g("#f_email"):"";
     if(!phone||!pass){err.textContent="Please fill in your number and password.";return;}
     if(pass.length<4){err.textContent="Password must be at least 4 characters.";return;}
-    if(mode==="signup"&&(!name||!addr)){err.textContent="Please fill in your name and delivery address.";return;}
+    if(mode==="signup"&&(!name||!addr||!email)){err.textContent="Please fill in your name, email and delivery address.";return;}
+    if(mode==="signup"&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){err.textContent="Please enter a valid email address.";return;}
     if(mode==="signup"&&!inServiceArea(addr)){captureLead(name,phone,addr);err.textContent=OUT_OF_AREA_MSG;return;}
     err.textContent="Please wait…";
     try{
       const res = mode==="login"
         ? await apiPub("login",{whatsapp:phone,passcode:pass})
-        : await apiPub("signup",{name,whatsapp:phone,address:addr,passcode:pass});
+        : await apiPub("signup",{name,email,whatsapp:phone,address:addr,passcode:pass});
       if(res.error){err.textContent=res.error;return;}
       session={accountId:res.accountId,whatsapp:phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};session.hasPending=!!(res.pending&&res.pending.length);saveSession();
       onSuccess();
