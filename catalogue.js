@@ -766,6 +766,9 @@ function stepAccount(){
       if(res.error){err.textContent=res.error;resetConfirm();return;}
       session={accountId:res.accountId,whatsapp:phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};session.hasPending=!!(res.pending&&res.pending.length);saveSession();
       updateNavAuth();
+      // New sign-up from an area we don't serve yet: capture the lead, drop their book picks,
+      // and show a friendly "we'll notify you" message instead of the order/deposit screen.
+      if(mode==="signup" && !inServiceArea(addr)){ try{apiPub("waitlist",{name:name,whatsapp:phone,address:addr});}catch(e){} cart.clear();updateCart();render(); stepSignupOutOfArea(); return; }
       if(mode==="login" && res.pending && res.pending.length) startMerge(res.pending);
       else stepConfirm();
     }catch(e){err.textContent="Couldn't connect. Please try again.";resetConfirm();}
@@ -840,6 +843,12 @@ function stepConfirm(){
   };
 }
 
+function stepSignupOutOfArea(){
+  show(`<h3 class="co-h">You're on the list! 💛</h3>
+    <p class="co-sub">Thanks for signing up with Bukutopia! We'll notify you once we "unlock" your area — your next book adventure is loading…</p>
+    <div class="co-row"><button class="btn-wa" id="coBack" style="flex:1;justify-content:center">Got it</button></div>`);
+  coModal.querySelector("#coBack").onclick=closeCheckout;
+}
 function stepOutOfArea(order){
   show(`<h3 class="co-h">You're on the list 💛</h3>
     <p class="co-sub">We don't deliver to your area just yet — but we've saved your details and we'll message you the moment Bukutopia launches near you. No payment needed now.</p>
