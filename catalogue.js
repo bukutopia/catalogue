@@ -841,7 +841,7 @@ function stepConfirm(){
 
 function stepOutOfArea(order){
   show(`<h3 class="co-h">You're on the list 💛</h3>
-    <p class="co-sub">We don't deliver to your area just yet — but we've saved your details and your book picks${order&&order.titles?` (${esc(order.titles)})`:""}. We'll message you the moment Bukutopia launches near you. No payment needed now.</p>
+    <p class="co-sub">We don't deliver to your area just yet — but we've saved your details and we'll message you the moment Bukutopia launches near you. No payment needed now.</p>
     <div class="co-row"><button class="btn-wa" id="coBack" style="flex:1;justify-content:center">Got it</button></div>`);
   coModal.querySelector("#coBack").onclick=closeCheckout;
 }
