@@ -627,8 +627,8 @@ function stepReview(){
     <p class="co-sub">Please log in to proceed:</p>
     <div class="co-list">${liRows()}</div>
     <div class="co-row">
-      <button class="btn-clear" id="coSignup" style="flex:1 1 0;min-width:0;justify-content:center">New? Sign up</button>
-      <button class="btn-wa" id="coLogin" style="flex:1 1 0;min-width:0;justify-content:center">Log in</button>
+      <button class="btn-clear" id="coSignup" style="flex:1 1 0;min-width:0;box-sizing:border-box;justify-content:center">New? Sign up</button>
+      <button class="btn-wa" id="coLogin" style="flex:1 1 0;min-width:0;box-sizing:border-box;justify-content:center">Log in</button>
     </div>
     <div style="text-align:right;margin-top:2px"><a class="co-forgot" href="#" onclick="stepForgot();return false;">Forgot password?</a></div>`);
   coModal.querySelector("#coSignup").onclick=()=>{pendingAuthMode="signup";stepAvailability();};
