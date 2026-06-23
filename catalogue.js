@@ -864,7 +864,7 @@ function stepPay(order){
   const msg=tpl.replace(/\{ref\}/g,ref).replace(/\{titles\}/g,order.titles).replace(/\{amount\}/g,money(order.amount)).replace(/\{type\}/g,typeText);
   const link=`https://wa.me/${waNum()}?text=${encodeURIComponent(msg)}`;
   show(`<h3 class="co-h">Order placed — ref ${ref} 🎉</h3>
-    <p class="co-sub">To complete checkout, pay and send us your receipt on WhatsApp <b>within 24 hours</b>. Unpaid orders are released automatically after that.</p>
+    <p class="co-sub">To complete checkout, please pay and send us your receipt on WhatsApp <b>within 24 hours</b>. Unpaid orders are released automatically after that.</p>
     <div style="text-align:center;margin:4px 0 10px">
       <div class="co-big">${money(order.amount)}</div>
       <img src="${PAYMENT_QR_URL}" alt="Payment QR" style="width:210px;height:210px;object-fit:contain;border:1px solid #eadfca;border-radius:12px;padding:8px;background:#fff"
