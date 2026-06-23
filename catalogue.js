@@ -738,10 +738,18 @@ function stepAccount(){
     const g=id=>{const el=coModal.querySelector(id);return el?el.value.trim():"";};
     const phone=g("#f_phone"), pass=g("#f_pass");
     const name=mode==="signup"?g("#f_name"):"", addr=mode==="signup"?g("#f_addr"):"", email=mode==="signup"?g("#f_email"):"";
-    if(!phone||!pass){err.textContent="Please fill in your number and password.";return;}
-    if(pass.length<4){err.textContent="Password must be at least 4 characters.";return;}
-    if(mode==="signup"&&(!name||!addr||!email)){err.textContent="Please fill in your name, email and delivery address.";return;}
-    if(mode==="signup"&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){err.textContent="Please enter a valid email address.";return;}
+    const probs=[];
+    if(mode==="signup"&&!name)probs.push("Please enter your name.");
+    if(!phone)probs.push("Please enter your WhatsApp number.");
+    if(mode==="signup"){
+      if(!email)probs.push("Please enter your email.");
+      else if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))probs.push("Please enter a valid email address.");
+      if(!addr)probs.push("Please enter your delivery address.");
+    }
+    if(!pass)probs.push("Please choose a password.");
+    else if(pass.length<4)probs.push("Password must be at least 4 characters.");
+    const areaNote=(mode==="signup"&&addr&&!inServiceArea(addr))?"Heads up: we don't deliver to your area just yet — you can still sign up and we'll notify you when we do.":"";
+    if(probs.length){ err.innerHTML=probs.map(esc).join("<br>")+(areaNote?'<br><span style="color:#7c879b">'+esc(areaNote)+'</span>':""); return; }
     if(!confirmed){
       confBox.hidden=false;
       confBox.innerHTML=`<b>Please double-check these are correct 👇</b><br>📱 WhatsApp: <b>${esc(phone)}</b>`+
@@ -929,10 +937,18 @@ function accountForm(onSuccess){
     const g=id=>{const el=coModal.querySelector(id);return el?el.value.trim():"";};
     const phone=g("#f_phone"), pass=g("#f_pass");
     const name=mode==="signup"?g("#f_name"):"", addr=mode==="signup"?g("#f_addr"):"", email=mode==="signup"?g("#f_email"):"";
-    if(!phone||!pass){err.textContent="Please fill in your number and password.";return;}
-    if(pass.length<4){err.textContent="Password must be at least 4 characters.";return;}
-    if(mode==="signup"&&(!name||!addr||!email)){err.textContent="Please fill in your name, email and delivery address.";return;}
-    if(mode==="signup"&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){err.textContent="Please enter a valid email address.";return;}
+    const probs=[];
+    if(mode==="signup"&&!name)probs.push("Please enter your name.");
+    if(!phone)probs.push("Please enter your WhatsApp number.");
+    if(mode==="signup"){
+      if(!email)probs.push("Please enter your email.");
+      else if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))probs.push("Please enter a valid email address.");
+      if(!addr)probs.push("Please enter your delivery address.");
+    }
+    if(!pass)probs.push("Please choose a password.");
+    else if(pass.length<4)probs.push("Password must be at least 4 characters.");
+    const areaNote=(mode==="signup"&&addr&&!inServiceArea(addr))?"Heads up: we don't deliver to your area just yet — you can still sign up and we'll notify you when we do.":"";
+    if(probs.length){ err.innerHTML=probs.map(esc).join("<br>")+(areaNote?'<br><span style="color:#7c879b">'+esc(areaNote)+'</span>':""); return; }
     err.textContent="Please wait…";
     try{
       const res = mode==="login"
