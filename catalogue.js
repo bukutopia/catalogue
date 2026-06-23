@@ -749,7 +749,7 @@ function stepAccount(){
     if(!pass)probs.push("Please choose a password.");
     else if(pass.length<4)probs.push("Password must be at least 4 characters.");
     const areaNote=(mode==="signup"&&addr&&!inServiceArea(addr))?"Heads up: we don't deliver to your area just yet — you can still sign up and we'll notify you when we do.":"";
-    if(probs.length){ err.innerHTML=probs.map(esc).join("<br>")+(areaNote?'<br><span style="color:#7c879b">'+esc(areaNote)+'</span>':""); return; }
+    if(probs.length){ err.innerHTML=probs.map(esc).join("<br>")+(areaNote?'<br>'+esc(areaNote):""); return; }
     if(!confirmed){
       confBox.hidden=false;
       confBox.innerHTML=`<b>Please double-check these are correct 👇</b><br>📱 WhatsApp: <b>${esc(phone)}</b>`+
@@ -948,7 +948,7 @@ function accountForm(onSuccess){
     if(!pass)probs.push("Please choose a password.");
     else if(pass.length<4)probs.push("Password must be at least 4 characters.");
     const areaNote=(mode==="signup"&&addr&&!inServiceArea(addr))?"Heads up: we don't deliver to your area just yet — you can still sign up and we'll notify you when we do.":"";
-    if(probs.length){ err.innerHTML=probs.map(esc).join("<br>")+(areaNote?'<br><span style="color:#7c879b">'+esc(areaNote)+'</span>':""); return; }
+    if(probs.length){ err.innerHTML=probs.map(esc).join("<br>")+(areaNote?'<br>'+esc(areaNote):""); return; }
     err.textContent="Please wait…";
     try{
       const res = mode==="login"
