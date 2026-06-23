@@ -577,11 +577,13 @@ function stepTrimCart(){
       <div class="co-list">${rows}</div>
       <div class="co-pickcount ${n>MAX_BOOKS?"over":""}">${n} of ${MAX_BOOKS} selected${n>MAX_BOOKS?" \u2014 remove "+(n-MAX_BOOKS)+" more":""}</div>
       <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Keep browsing</button>
-        <button class="btn-wa" id="coNext" style="flex:1.4;justify-content:center" ${ok?"":"disabled"}>Check out</button></div>`);
+        <button class="btn-wa" id="coNext" style="flex:1.4;justify-content:center">Check out</button></div>`);
     coModal.querySelectorAll(".co-trim-x").forEach(b=>b.onclick=()=>{ cart.delete(b.dataset.key); updateCart(); refreshAllCards(); if(cart.size===0){closeCheckout();return;} draw(); });
     coModal.querySelector("#coBack").onclick=closeCheckout;
     const nb=coModal.querySelector("#coNext");
-    nb.onclick=()=>{ if(cart.size<1||cart.size>MAX_BOOKS)return; coItems=cartItems(); if(!API_URL){legacyWhatsApp();return;} stepReview(); };
+    nb.onclick=()=>{ if(cart.size<1)return;
+      if(cart.size>MAX_BOOKS){ const over=cart.size-MAX_BOOKS; alert("You can rent up to "+MAX_BOOKS+" books per registered name. 📚\n\nPlease remove "+over+" book"+(over===1?"":"s")+" to continue."); return; }
+      coItems=cartItems(); if(!API_URL){legacyWhatsApp();return;} stepReview(); };
   }
   draw();
 }
@@ -625,8 +627,8 @@ function stepReview(){
     <p class="co-sub">Please log in to proceed:</p>
     <div class="co-list">${liRows()}</div>
     <div class="co-row">
-      <button class="btn-clear" id="coSignup" style="flex:1">New? Sign up</button>
-      <button class="btn-wa" id="coLogin" style="flex:1.4;justify-content:center">Log in</button>
+      <button class="btn-clear" id="coSignup" style="flex:1;justify-content:center">New? Sign up</button>
+      <button class="btn-wa" id="coLogin" style="flex:1;justify-content:center">Log in</button>
     </div>
     <div style="text-align:right;margin-top:2px"><a class="co-forgot" href="#" onclick="stepForgot();return false;">Forgot password?</a></div>`);
   coModal.querySelector("#coSignup").onclick=()=>{pendingAuthMode="signup";stepAvailability();};
