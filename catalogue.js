@@ -838,7 +838,7 @@ function stepOutOfArea(order){
 function stepPay(order){
   const ref=String(order.id).slice(0,4).toUpperCase();
   const deposit=order.type==="deposit";
-  const typeText=deposit?"refundable deposit, first month free":"rental checkout";
+  const typeText=deposit?"refundable deposit only, first month free rental":"rental checkout";
   const tpl=(typeof SITE_MSGS!=="undefined"&&SITE_MSGS.checkout)?SITE_MSGS.checkout
     :"Hi Bukutopia! 📚 Order {ref} — {titles}. I'm paying {amount} ({type}). My payment receipt is attached. 🙏";
   const msg=tpl.replace(/\{ref\}/g,ref).replace(/\{titles\}/g,order.titles).replace(/\{amount\}/g,money(order.amount)).replace(/\{type\}/g,typeText);
