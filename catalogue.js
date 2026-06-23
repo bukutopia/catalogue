@@ -635,23 +635,23 @@ function stepReview(){
   coModal.querySelector("#coLogin").onclick=()=>{pendingAuthMode="login";stepAvailability();};
 }
 
-// Forgot-password: enter WhatsApp number, we email a reset link to the address on file.
+// Forgot-password: enter email address, we email a reset link to it.
 function stepForgot(){
   show(`<h3 class="co-h">We're here to help</h3>
-    <p class="co-sub">Enter your WhatsApp number and we'll email a password reset link to the address on your account.</p>
-    <label>WhatsApp number</label><input id="f_rphone" inputmode="numeric" placeholder="60123456789">
+    <p class="co-sub">Enter your email address and we'll send a password reset link to your address.</p>
+    <label>Email address</label><input id="f_remail" type="email" inputmode="email" placeholder="you@example.com">
     <div class="co-err" id="coErr"></div>
     <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Cancel</button>
       <button class="btn-wa" id="coGo" style="flex:1.4;justify-content:center">Submit</button></div>`);
   const err=coModal.querySelector("#coErr");
   coModal.querySelector("#coBack").onclick=stepAccount;
   coModal.querySelector("#coGo").onclick=async()=>{
-    const phone=(coModal.querySelector("#f_rphone").value||"").trim();
-    if(!phone){err.textContent="Please enter your WhatsApp number.";return;}
+    const email=(coModal.querySelector("#f_remail").value||"").trim();
+    if(!email||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){err.textContent="Please enter a valid email address.";return;}
     err.textContent="Sending…";
-    try{ await apiPub("requestReset",{whatsapp:phone}); }catch(e){}
+    try{ await apiPub("requestReset",{email:email}); }catch(e){}
     show(`<h3 class="co-h">Check your email 📧</h3>
-      <p class="co-sub">If an account with that number has an email on file, we've just sent a password reset link. It's valid for 30 minutes — please check your inbox (and spam folder).</p>
+      <p class="co-sub">If that email is on a Bukutopia account, we've just sent a password reset link. It's valid for 30 minutes — please check your inbox (and spam folder).</p>
       <div class="co-row"><button class="btn-wa" id="coBack" style="flex:1;justify-content:center">Done</button></div>`);
     coModal.querySelector("#coBack").onclick=stepAccount;
   };
@@ -746,12 +746,12 @@ function stepAccount(){
       else if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))probs.push("Please enter a valid email address.");
       if(!addr)probs.push("Please enter your delivery address.");
     }
-    if(!pass)probs.push("Please choose a password.");
-    else if(pass.length<4)probs.push("Password must be at least 4 characters.");
+    if(!pass)probs.push(mode==="signup"?"Please choose a password.":"Please enter your password.");
+    else if(mode==="signup"&&pass.length<4)probs.push("Password must be at least 4 characters.");
     const areaNote=(mode==="signup"&&addr&&!inServiceArea(addr))?"Heads up: we don't deliver to your area just yet — you can still sign up and we'll notify you when we do.":"";
     if(probs.length){ err.innerHTML=probs.map(esc).join("<br>")+(areaNote?'<br>'+esc(areaNote):""); return; }
     err.innerHTML=areaNote?esc(areaNote):"";  // all fields valid: clear errors, keep the out-of-area heads-up
-    if(!confirmed){
+    if(mode==="signup" && !confirmed){  // returning users (login) skip the double-check and log in straight away
       confBox.hidden=false;
       confBox.innerHTML=`<b>Please double-check these are correct 👇</b><br>📱 WhatsApp: <b>${esc(phone)}</b>`+
         (mode==="signup"?`<br>✉️ Email: <b>${esc(email)}</b><br>📦 Delivery address: <b>${esc(addr)}</b>`:"")+
@@ -955,8 +955,8 @@ function accountForm(onSuccess){
       else if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))probs.push("Please enter a valid email address.");
       if(!addr)probs.push("Please enter your delivery address.");
     }
-    if(!pass)probs.push("Please choose a password.");
-    else if(pass.length<4)probs.push("Password must be at least 4 characters.");
+    if(!pass)probs.push(mode==="signup"?"Please choose a password.":"Please enter your password.");
+    else if(mode==="signup"&&pass.length<4)probs.push("Password must be at least 4 characters.");
     const areaNote=(mode==="signup"&&addr&&!inServiceArea(addr))?"Heads up: we don't deliver to your area just yet — you can still sign up and we'll notify you when we do.":"";
     if(probs.length){ err.innerHTML=probs.map(esc).join("<br>")+(areaNote?'<br>'+esc(areaNote):""); return; }
     err.innerHTML=areaNote?esc(areaNote):"";  // all fields valid: clear errors, keep the out-of-area heads-up
