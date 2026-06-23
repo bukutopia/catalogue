@@ -856,7 +856,7 @@ function stepOutOfArea(order){
   coModal.querySelector("#coBack").onclick=closeCheckout;
 }
 function stepPay(order){
-  const ref=String(order.id).slice(0,4).toUpperCase();
+  const ref=order.ref||String(order.id).slice(0,4).toUpperCase();
   const deposit=order.type==="deposit";
   const typeText=deposit?"refundable deposit only, first month free rental":"rental checkout";
   const tpl=(typeof SITE_MSGS!=="undefined"&&SITE_MSGS.checkout)?SITE_MSGS.checkout
