@@ -715,11 +715,11 @@ function stepAccount(){
     <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Back</button>
       <button class="btn-wa" id="coGo" style="flex:1.4;justify-content:center">Continue</button></div>`);
   const form=coModal.querySelector("#coForm"), err=coModal.querySelector("#coErr");
-  const loginForm=`<label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789">
+  const loginForm=`<label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789"><div style="font-size:11px;color:#7c879b;margin-top:3px">Malaysian number starting with 0 is fine. Overseas number? Add your country code (e.g. +44…).</div>
     <label>Password</label><input id="f_pass" type="password" placeholder="Your password">
     <a class="co-forgot" href="#" onclick="stepForgot();return false;">Forgot password?</a>`;
   const signupForm=`<label>Your name</label><input id="f_name" placeholder="Full name">
-    <label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789">
+    <label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789"><div style="font-size:11px;color:#7c879b;margin-top:3px">Malaysian number starting with 0 is fine. Overseas number? Add your country code (e.g. +44…).</div>
     <label>Email</label><input id="f_email" type="email" inputmode="email" placeholder="you@example.com">
     <label>Delivery address</label><input id="f_addr" placeholder="Unit, street, postcode">
     <label>Choose a password</label><input id="f_pass" type="password" placeholder="At least 4 characters">`;
@@ -750,6 +750,7 @@ function stepAccount(){
     else if(pass.length<4)probs.push("Password must be at least 4 characters.");
     const areaNote=(mode==="signup"&&addr&&!inServiceArea(addr))?"Heads up: we don't deliver to your area just yet — you can still sign up and we'll notify you when we do.":"";
     if(probs.length){ err.innerHTML=probs.map(esc).join("<br>")+(areaNote?'<br>'+esc(areaNote):""); return; }
+    err.innerHTML=areaNote?esc(areaNote):"";  // all fields valid: clear errors, keep the out-of-area heads-up
     if(!confirmed){
       confBox.hidden=false;
       confBox.innerHTML=`<b>Please double-check these are correct 👇</b><br>📱 WhatsApp: <b>${esc(phone)}</b>`+
@@ -920,11 +921,11 @@ function accountForm(onSuccess){
       <button class="btn-wa" id="coGo" style="flex:1.4;justify-content:center">Continue</button></div>`);
   let mode="login";
   const form=coModal.querySelector("#coForm"), err=coModal.querySelector("#coErr");
-  const loginForm=`<label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789">
+  const loginForm=`<label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789"><div style="font-size:11px;color:#7c879b;margin-top:3px">Malaysian number starting with 0 is fine. Overseas number? Add your country code (e.g. +44…).</div>
     <label>Password</label><input id="f_pass" type="password" placeholder="Your password">
     <a class="co-forgot" href="#" onclick="stepForgot();return false;">Forgot password?</a>`;
   const signupForm=`<label>Your name</label><input id="f_name" placeholder="Full name">
-    <label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789">
+    <label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789"><div style="font-size:11px;color:#7c879b;margin-top:3px">Malaysian number starting with 0 is fine. Overseas number? Add your country code (e.g. +44…).</div>
     <label>Email</label><input id="f_email" type="email" inputmode="email" placeholder="you@example.com">
     <label>Delivery address</label><input id="f_addr" placeholder="Unit, street, postcode">
     <label>Choose a password</label><input id="f_pass" type="password" placeholder="At least 4 characters">`;
@@ -949,6 +950,7 @@ function accountForm(onSuccess){
     else if(pass.length<4)probs.push("Password must be at least 4 characters.");
     const areaNote=(mode==="signup"&&addr&&!inServiceArea(addr))?"Heads up: we don't deliver to your area just yet — you can still sign up and we'll notify you when we do.":"";
     if(probs.length){ err.innerHTML=probs.map(esc).join("<br>")+(areaNote?'<br>'+esc(areaNote):""); return; }
+    err.innerHTML=areaNote?esc(areaNote):"";  // all fields valid: clear errors, keep the out-of-area heads-up
     err.textContent="Please wait…";
     try{
       const res = mode==="login"
