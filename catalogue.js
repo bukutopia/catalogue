@@ -612,7 +612,7 @@ function stepReview(){
   // Logged-in customers keep the simple review + checkout.
   if(session){
     show(`<h3 class="co-h">Your book list</h3>
-      <p class="co-sub">${coItems.length} of ${MAX_BOOKS} books. We'll check they're all available, then set up your order.</p>
+      <p class="co-sub">${coItems.length} of ${MAX_BOOKS} books.</p>
       <div class="co-list">${liRows()}</div>
       <div class="co-row">
         <button class="btn-clear" id="coBack" style="flex:1">Keep browsing</button>
