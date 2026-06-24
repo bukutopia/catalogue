@@ -651,7 +651,7 @@ function stepForgot(){
     err.textContent="Sending…";
     try{ await apiPub("requestReset",{email:email}); }catch(e){}
     show(`<h3 class="co-h">Check your email 📧</h3>
-      <p class="co-sub">If that email is on a Bukutopia account, we've just sent a password reset link. It's valid for 30 minutes — please check your inbox (and spam folder).</p>
+      <p class="co-sub">We've just sent a password reset link. It's valid for 30 minutes — please check your inbox (and spam folder).</p>
       <div class="co-row"><button class="btn-wa" id="coBack" style="flex:1;justify-content:center">Done</button></div>`);
     coModal.querySelector("#coBack").onclick=stepAccount;
   };
