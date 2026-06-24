@@ -715,7 +715,7 @@ function stepAccount(){
     <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Back</button>
       <button class="btn-wa" id="coGo" style="flex:1.4;justify-content:center">Continue</button></div>`);
   const form=coModal.querySelector("#coForm"), err=coModal.querySelector("#coErr");
-  const loginForm=`<label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789"><div style="font-size:11px;color:#7c879b;margin-top:3px">Non-Malaysian number? Add your country code (e.g. +44…).</div>
+  const loginForm=`<label>WhatsApp number or email</label><input id="f_phone" placeholder="60123456789 or you@example.com"><div style="font-size:11px;color:#7c879b;margin-top:3px">Log in with the mobile number or email on your account.</div>
     <label>Password</label><input id="f_pass" type="password" placeholder="Your password">
     <a class="co-forgot" href="#" onclick="stepForgot();return false;">Forgot password?</a>`;
   const signupForm=`<label>Your name</label><input id="f_name" placeholder="Full name">
@@ -740,7 +740,7 @@ function stepAccount(){
     const name=mode==="signup"?g("#f_name"):"", addr=mode==="signup"?g("#f_addr"):"", email=mode==="signup"?g("#f_email"):"";
     const probs=[];
     if(mode==="signup"&&!name)probs.push("Please enter your name.");
-    if(!phone)probs.push("Please enter your WhatsApp number.");
+    if(!phone)probs.push(mode==="login"?"Please enter your WhatsApp number or email.":"Please enter your WhatsApp number.");
     if(mode==="signup"){
       if(!email)probs.push("Please enter your email.");
       else if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))probs.push("Please enter a valid email address.");
@@ -761,10 +761,10 @@ function stepAccount(){
     err.textContent="Please wait…";
     try{
       let res;
-      if(mode==="login") res=await apiPub("login",{whatsapp:phone,passcode:pass});
+      if(mode==="login") res=await apiPub("login",{identifier:phone,passcode:pass});
       else res=await apiPub("signup",{name,email,whatsapp:phone,address:addr,passcode:pass});
       if(res.error){err.textContent=res.error;resetConfirm();return;}
-      session={accountId:res.accountId,whatsapp:phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};session.hasPending=!!(res.pending&&res.pending.length);saveSession();
+      session={accountId:res.accountId,whatsapp:res.whatsapp||phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};session.hasPending=!!(res.pending&&res.pending.length);saveSession();
       updateNavAuth();
       // New sign-up from an area we don't serve yet: capture the lead, drop their book picks,
       // and show a friendly "we'll notify you" message instead of the order/deposit screen.
@@ -945,7 +945,7 @@ function accountForm(onSuccess){
       <button class="btn-wa" id="coGo" style="flex:1.4;justify-content:center">Continue</button></div>`);
   let mode="login";
   const form=coModal.querySelector("#coForm"), err=coModal.querySelector("#coErr");
-  const loginForm=`<label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789"><div style="font-size:11px;color:#7c879b;margin-top:3px">Non-Malaysian number? Add your country code (e.g. +44…).</div>
+  const loginForm=`<label>WhatsApp number or email</label><input id="f_phone" placeholder="60123456789 or you@example.com"><div style="font-size:11px;color:#7c879b;margin-top:3px">Log in with the mobile number or email on your account.</div>
     <label>Password</label><input id="f_pass" type="password" placeholder="Your password">
     <a class="co-forgot" href="#" onclick="stepForgot();return false;">Forgot password?</a>`;
   const signupForm=`<label>Your name</label><input id="f_name" placeholder="Full name">
@@ -964,7 +964,7 @@ function accountForm(onSuccess){
     const name=mode==="signup"?g("#f_name"):"", addr=mode==="signup"?g("#f_addr"):"", email=mode==="signup"?g("#f_email"):"";
     const probs=[];
     if(mode==="signup"&&!name)probs.push("Please enter your name.");
-    if(!phone)probs.push("Please enter your WhatsApp number.");
+    if(!phone)probs.push(mode==="login"?"Please enter your WhatsApp number or email.":"Please enter your WhatsApp number.");
     if(mode==="signup"){
       if(!email)probs.push("Please enter your email.");
       else if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))probs.push("Please enter a valid email address.");
@@ -978,10 +978,10 @@ function accountForm(onSuccess){
     err.textContent="Please wait…";
     try{
       const res = mode==="login"
-        ? await apiPub("login",{whatsapp:phone,passcode:pass})
+        ? await apiPub("login",{identifier:phone,passcode:pass})
         : await apiPub("signup",{name,email,whatsapp:phone,address:addr,passcode:pass});
       if(res.error){err.textContent=res.error;return;}
-      session={accountId:res.accountId,whatsapp:phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};session.hasPending=!!(res.pending&&res.pending.length);saveSession();
+      session={accountId:res.accountId,whatsapp:res.whatsapp||phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};session.hasPending=!!(res.pending&&res.pending.length);saveSession();
       onSuccess();
     }catch(e){err.textContent="Couldn't connect. Please try again.";}
   };
