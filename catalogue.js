@@ -825,9 +825,9 @@ async function stepConfirm(){
   if(outstanding+coItems.length>MAX_BOOKS){
     const left=Math.max(0,MAX_BOOKS-outstanding);
     show(`<h3 class="co-h">You've reached your book limit 📚</h3>
-      <p class="co-sub">You already have ${outstanding} book${outstanding===1?"":"s"} out with us. You can rent up to ${MAX_BOOKS} at a time${left>0?` — so there's room for ${left} more right now`:""}. Please return some before borrowing ${coItems.length}.</p>
-      <div class="co-row"><button class="btn-wa" id="coBack" style="flex:1;justify-content:center">Back to my books</button></div>`);
-    coModal.querySelector("#coBack").onclick=()=>{ closeCheckout(); const b=document.getElementById("books"); if(b)b.scrollIntoView({behavior:"smooth"}); };
+      <p class="co-sub">You have already rented ${outstanding} book${outstanding===1?"":"s"} with us. You can rent up to ${MAX_BOOKS} at a time${left>0?` — so there's room for ${left} more right now`:""}. Please adjust cart before checkout.</p>
+      <div class="co-row"><button class="btn-wa" id="coBack" style="flex:1;justify-content:center">Back to my cart</button></div>`);
+    coModal.querySelector("#coBack").onclick=()=>stepTrimCart();
     return;
   }
   const total=coItems.reduce((s,it)=>s+it.price,0);
