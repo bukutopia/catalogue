@@ -96,8 +96,10 @@
   .title-row span{flex:1}
   .add-btn{flex:0 0 auto;border:1.5px solid var(--coral);background:#fff;color:var(--coral-dark);
     font-weight:800;font-size:12px;border-radius:10px;padding:6px 12px;cursor:pointer;font-family:inherit;transition:all .12s}
-  .add-btn:hover{background:var(--coral);color:#fff}
+  .add-btn:not(:disabled):hover{background:var(--coral);color:#fff}
   .add-btn.added{background:var(--coral);color:#fff;border-color:var(--coral)}
+  .add-btn:disabled{cursor:default;border-color:var(--muted);color:var(--muted);background:#fff;opacity:.7}
+  .add-btn:disabled:hover{background:#fff;color:var(--muted)}
   .card-foot{margin-top:auto}
   .add-all{width:100%;border:none;background:var(--navy);color:#fff;font-weight:800;font-size:14px;
     border-radius:14px;padding:12px;cursor:pointer;font-family:inherit;transition:background .12s}
@@ -366,6 +368,6 @@
   <div class="modal" id="coModal"></div>
 </div>
 
-<script src="catalogue.js?v=47"></script>
+<script src="catalogue.js?v=48"></script>
 </body>
 </html>
