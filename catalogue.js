@@ -761,7 +761,7 @@ function stepAccount(){
     err.textContent="Please wait…";
     try{
       let res;
-      if(mode==="login") res=await apiPub("login",{identifier:phone,passcode:pass});
+      if(mode==="login") res=await apiPub("login",{identifier:phone,whatsapp:phone,passcode:pass});
       else res=await apiPub("signup",{name,email,whatsapp:phone,address:addr,passcode:pass});
       if(res.error){err.textContent=res.error;resetConfirm();return;}
       session={accountId:res.accountId,whatsapp:res.whatsapp||phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};session.hasPending=!!(res.pending&&res.pending.length);saveSession();
@@ -978,7 +978,7 @@ function accountForm(onSuccess){
     err.textContent="Please wait…";
     try{
       const res = mode==="login"
-        ? await apiPub("login",{identifier:phone,passcode:pass})
+        ? await apiPub("login",{identifier:phone,whatsapp:phone,passcode:pass})
         : await apiPub("signup",{name,email,whatsapp:phone,address:addr,passcode:pass});
       if(res.error){err.textContent=res.error;return;}
       session={accountId:res.accountId,whatsapp:res.whatsapp||phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};session.hasPending=!!(res.pending&&res.pending.length);saveSession();
