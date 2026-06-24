@@ -989,7 +989,7 @@ function accountForm(onSuccess){
 
 function statusBadge(o){
   const s=o.status, paid=String(o.paymentStatus)==="Confirmed";
-  let bg="#eef2f7",fg="#5a6b7a",label=s;
+  let bg="#eef2f7",fg="#5a6b7a",label=(s==="Out")?"Delivered":s;
   if(s==="Pending payment"){ bg="#fff3d6"; fg="#8a6d1e"; label=paid?"Paid — processing":"Awaiting payment"; }
   else if(s==="Paid"||s==="Packed"){ bg="#dceaff"; fg="#1c4b8a"; }
   else if(s==="Out"||s==="Extended"){ bg="#d9f2e2"; fg="#1d6b3e"; }
