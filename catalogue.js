@@ -562,6 +562,22 @@ function inServiceArea(addr){addr=String(addr||"").toLowerCase();return COVERED_
 var OUT_OF_AREA_MSG="Sorry, we don't cover your area just yet 💛 We've saved your details and will message you the moment we do.";
 async function captureLead(name,phone,addr){try{await apiPub("waitlist",{name:name||"",whatsapp:phone,address:addr});}catch(e){}}
 
+// Suggest a correction when the email domain looks like a typo of a common provider (e.g. gmil.com → gmail.com).
+function emailDomainSuggestion(email){
+  email=String(email||"").trim().toLowerCase();
+  var at=email.lastIndexOf("@"); if(at<1) return null;
+  var domain=email.slice(at+1); if(!domain) return null;
+  var popular=["gmail.com","googlemail.com","hotmail.com","outlook.com","live.com","yahoo.com","ymail.com","icloud.com","me.com","aol.com","protonmail.com","proton.me","msn.com","hotmail.co.uk","yahoo.co.uk"];
+  if(popular.indexOf(domain)>=0) return null; // already a known-good domain
+  var typos={"gmial.com":"gmail.com","gmil.com":"gmail.com","gmai.com":"gmail.com","gmaill.com":"gmail.com","gmail.co":"gmail.com","gmail.con":"gmail.com","gmail.cm":"gmail.com","gmail.om":"gmail.com","gnail.com":"gmail.com","gamil.com":"gmail.com","gmali.com":"gmail.com","hotmial.com":"hotmail.com","hotmal.com":"hotmail.com","hotmai.com":"hotmail.com","hotmail.co":"hotmail.com","hotmail.con":"hotmail.com","hotnail.com":"hotmail.com","hormail.com":"hotmail.com","yaho.com":"yahoo.com","yahooo.com":"yahoo.com","yahoo.co":"yahoo.com","yhoo.com":"yahoo.com","yahooo.co":"yahoo.com","outlok.com":"outlook.com","outloo.com":"outlook.com","outlook.co":"outlook.com","iclod.com":"icloud.com","icoud.com":"icloud.com","iclould.com":"icloud.com"};
+  if(typos[domain]) return email.slice(0,at+1)+typos[domain];
+  function lev(a,b){var m=a.length,n=b.length,i,j,d=[];for(i=0;i<=m;i++)d[i]=[i];for(j=0;j<=n;j++)d[0][j]=j;for(i=1;i<=m;i++)for(j=1;j<=n;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a.charAt(i-1)===b.charAt(j-1)?0:1));return d[m][n];}
+  var best=null,bestD=99;
+  for(var p=0;p<popular.length;p++){var dd=lev(domain,popular[p]);if(dd<bestD){bestD=dd;best=popular[p];}}
+  if(best&&bestD<=1) return email.slice(0,at+1)+best; // one-character-off from a popular domain
+  return null;
+}
+
 function stepTrimCart(){
   function draw(){
     const n=cart.size, ok=n>=1&&n<=MAX_BOOKS;
@@ -747,6 +763,7 @@ function stepAccount(){
     if(mode==="signup"){
       if(!email)probs.push("Please enter your email.");
       else if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))probs.push("Please enter a valid email address.");
+      else { const sug=emailDomainSuggestion(email); if(sug)probs.push("Please check your email — did you mean "+sug+"?"); }
       if(!addr)probs.push("Please enter your delivery address.");
     }
     if(!pass)probs.push(mode==="signup"?"Please choose a password.":"Please enter your password.");
@@ -993,6 +1010,7 @@ function accountForm(onSuccess){
     if(mode==="signup"){
       if(!email)probs.push("Please enter your email.");
       else if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))probs.push("Please enter a valid email address.");
+      else { const sug=emailDomainSuggestion(email); if(sug)probs.push("Please check your email — did you mean "+sug+"?"); }
       if(!addr)probs.push("Please enter your delivery address.");
     }
     if(!pass)probs.push(mode==="signup"?"Please choose a password.":"Please enter your password.");
