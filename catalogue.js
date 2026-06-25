@@ -1042,7 +1042,7 @@ async function myAccountPanel(){
   if(session){ session.hasPending=active.some(o=>o.status==="Pending payment"&&String(o.paymentStatus)!=="Confirmed"); saveSession(); updateNavAuth(); }
   let listHtml;
   if(res.error){ listHtml=`<p class="co-sub">We couldn't load your orders just now. Please try again in a moment.</p>`; }
-  else if(active.length===0){ listHtml=`<div class="co-note">Welcome to Bukutopia. Your next book adventure is waiting. Add up to ${MAX_BOOKS} books to your cart and check out to get started! 📚</div>`; }
+  else if(active.length===0){ listHtml=`<div class="co-note">✨ A world of stories awaits! Add up to ${MAX_BOOKS} books and check out to start your BUKUTOPIA journey!</div>`; }
   else {
     listHtml=active.map(o=>{
       const ref=String(o.id).slice(0,4).toUpperCase();
