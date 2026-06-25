@@ -766,6 +766,16 @@ function stepAccount(){
       }
     }
     if(mode==="signup" && !confirmed){  // returning users (login) skip the double-check and log in straight away
+      // Flag a WhatsApp number / email that's already registered, before asking them to confirm.
+      err.textContent="Checking…";
+      try{
+        const chk=await apiPub("checkContact",{whatsapp:phone,email:email});
+        const dup=[];
+        if(chk&&chk.phoneExists)dup.push("This WhatsApp number is already registered — please log in.");
+        if(chk&&chk.emailExists)dup.push("This email is already registered — please log in.");
+        if(dup.length){ err.innerHTML=dup.map(esc).join("<br>"); return; }
+      }catch(e){}
+      err.innerHTML=areaNote?esc(areaNote):"";
       confBox.hidden=false;
       confBox.innerHTML=`<b>Please double-check these are correct 👇</b><br>📱 WhatsApp: <b>${esc(phone)}</b>`+
         (mode==="signup"?`<br>✉️ Email: <b>${esc(email)}</b><br>📦 Delivery address: <b>${esc(addr)}</b>`:"")+
