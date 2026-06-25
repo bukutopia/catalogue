@@ -723,7 +723,7 @@ function stepAccount(){
   const signupForm=`<label>Your name</label><input id="f_name" placeholder="Full name">
     <label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789"><div style="font-size:11px;color:#7c879b;margin-top:3px">Non-Malaysian number? Add your country code (example 44…).</div>
     <label>Email</label><input id="f_email" type="email" inputmode="email" placeholder="you@example.com">
-    <label>Delivery address</label><input id="f_addr" placeholder="Unit, street, postcode">
+    <label>Delivery address</label><input id="f_addr" placeholder="Unit, building, street address, postcode">
     <label>Choose a password</label><input id="f_pass" type="password" placeholder="At least 4 characters">
     <label>Confirm password</label><input id="f_pass2" type="password" placeholder="Re-enter your password">`;
   function paint(){form.innerHTML=mode==="login"?loginForm:signupForm;err.textContent="";}
@@ -755,6 +755,16 @@ function stepAccount(){
     const areaNote=(mode==="signup"&&addr&&!inServiceArea(addr))?"Heads up: we don't deliver to your area just yet — you can still sign up and we'll notify you when we do.":"";
     if(probs.length){ err.innerHTML=probs.map(esc).join("<br>")+(areaNote?'<br>'+esc(areaNote):""); return; }
     err.innerHTML=areaNote?esc(areaNote):"";  // all fields valid: clear errors, keep the out-of-area heads-up
+    if(mode==="signup" && !confirmed){  // up-front: flag an already-registered number/email before the double-check
+      goBtn.disabled=true;
+      let chk=null; try{ chk=await apiPub("checkContact",{whatsapp:phone,email:email}); }catch(e){}
+      goBtn.disabled=false;
+      if(chk){ const dup=[];
+        if(chk.phoneExists)dup.push("This WhatsApp number is already registered — please log in.");
+        if(chk.emailExists)dup.push("This email is already registered — please log in.");
+        if(dup.length){ err.innerHTML=dup.map(esc).join("<br>"); return; }
+      }
+    }
     if(mode==="signup" && !confirmed){  // returning users (login) skip the double-check and log in straight away
       confBox.hidden=false;
       confBox.innerHTML=`<b>Please double-check these are correct 👇</b><br>📱 WhatsApp: <b>${esc(phone)}</b>`+
@@ -955,7 +965,7 @@ function accountForm(onSuccess){
   const signupForm=`<label>Your name</label><input id="f_name" placeholder="Full name">
     <label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789"><div style="font-size:11px;color:#7c879b;margin-top:3px">Non-Malaysian number? Add your country code (example 44…).</div>
     <label>Email</label><input id="f_email" type="email" inputmode="email" placeholder="you@example.com">
-    <label>Delivery address</label><input id="f_addr" placeholder="Unit, street, postcode">
+    <label>Delivery address</label><input id="f_addr" placeholder="Unit, building, street address, postcode">
     <label>Choose a password</label><input id="f_pass" type="password" placeholder="At least 4 characters">
     <label>Confirm password</label><input id="f_pass2" type="password" placeholder="Re-enter your password">`;
   function paint(){form.innerHTML=mode==="login"?loginForm:signupForm;err.textContent="";}
