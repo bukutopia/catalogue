@@ -722,7 +722,8 @@ function stepAccount(){
     <label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789"><div style="font-size:11px;color:#7c879b;margin-top:3px">Non-Malaysian number? Add your country code (e.g. +44…).</div>
     <label>Email</label><input id="f_email" type="email" inputmode="email" placeholder="you@example.com">
     <label>Delivery address</label><input id="f_addr" placeholder="Unit, street, postcode">
-    <label>Choose a password</label><input id="f_pass" type="password" placeholder="At least 4 characters">`;
+    <label>Choose a password</label><input id="f_pass" type="password" placeholder="At least 4 characters">
+    <label>Confirm password</label><input id="f_pass2" type="password" placeholder="Re-enter your password">`;
   function paint(){form.innerHTML=mode==="login"?loginForm:signupForm;err.textContent="";}
   paint();
   coModal.querySelector("#tabLogin").onclick=()=>{mode="login";coModal.querySelector("#tabLogin").classList.add("on");coModal.querySelector("#tabSignup").classList.remove("on");paint();};
@@ -736,7 +737,7 @@ function stepAccount(){
   coModal.querySelector("#tabSignup").addEventListener("click",resetConfirm);
   goBtn.onclick=async()=>{
     const g=id=>{const el=coModal.querySelector(id);return el?el.value.trim():"";};
-    const phone=g("#f_phone"), pass=g("#f_pass");
+    const phone=g("#f_phone"), pass=g("#f_pass"), pass2=g("#f_pass2");
     const name=mode==="signup"?g("#f_name"):"", addr=mode==="signup"?g("#f_addr"):"", email=mode==="signup"?g("#f_email"):"";
     const probs=[];
     if(mode==="signup"&&!name)probs.push("Please enter your name.");
@@ -748,6 +749,7 @@ function stepAccount(){
     }
     if(!pass)probs.push(mode==="signup"?"Please choose a password.":"Please enter your password.");
     else if(mode==="signup"&&pass.length<4)probs.push("Password must be at least 4 characters.");
+    if(mode==="signup"&&pass&&pass.length>=4&&pass!==pass2)probs.push("Passwords don't match.");
     const areaNote=(mode==="signup"&&addr&&!inServiceArea(addr))?"Heads up: we don't deliver to your area just yet — you can still sign up and we'll notify you when we do.":"";
     if(probs.length){ err.innerHTML=probs.map(esc).join("<br>")+(areaNote?'<br>'+esc(areaNote):""); return; }
     err.innerHTML=areaNote?esc(areaNote):"";  // all fields valid: clear errors, keep the out-of-area heads-up
@@ -952,7 +954,8 @@ function accountForm(onSuccess){
     <label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789"><div style="font-size:11px;color:#7c879b;margin-top:3px">Non-Malaysian number? Add your country code (e.g. +44…).</div>
     <label>Email</label><input id="f_email" type="email" inputmode="email" placeholder="you@example.com">
     <label>Delivery address</label><input id="f_addr" placeholder="Unit, street, postcode">
-    <label>Choose a password</label><input id="f_pass" type="password" placeholder="At least 4 characters">`;
+    <label>Choose a password</label><input id="f_pass" type="password" placeholder="At least 4 characters">
+    <label>Confirm password</label><input id="f_pass2" type="password" placeholder="Re-enter your password">`;
   function paint(){form.innerHTML=mode==="login"?loginForm:signupForm;err.textContent="";}
   paint();
   coModal.querySelector("#tabLogin").onclick=()=>{mode="login";coModal.querySelector("#tabLogin").classList.add("on");coModal.querySelector("#tabSignup").classList.remove("on");paint();};
@@ -960,7 +963,7 @@ function accountForm(onSuccess){
   coModal.querySelector("#coBack").onclick=closeCheckout;
   coModal.querySelector("#coGo").onclick=async()=>{
     const g=id=>{const el=coModal.querySelector(id);return el?el.value.trim():"";};
-    const phone=g("#f_phone"), pass=g("#f_pass");
+    const phone=g("#f_phone"), pass=g("#f_pass"), pass2=g("#f_pass2");
     const name=mode==="signup"?g("#f_name"):"", addr=mode==="signup"?g("#f_addr"):"", email=mode==="signup"?g("#f_email"):"";
     const probs=[];
     if(mode==="signup"&&!name)probs.push("Please enter your name.");
@@ -972,6 +975,7 @@ function accountForm(onSuccess){
     }
     if(!pass)probs.push(mode==="signup"?"Please choose a password.":"Please enter your password.");
     else if(mode==="signup"&&pass.length<4)probs.push("Password must be at least 4 characters.");
+    if(mode==="signup"&&pass&&pass.length>=4&&pass!==pass2)probs.push("Passwords don't match.");
     const areaNote=(mode==="signup"&&addr&&!inServiceArea(addr))?"Heads up: we don't deliver to your area just yet — you can still sign up and we'll notify you when we do.":"";
     if(probs.length){ err.innerHTML=probs.map(esc).join("<br>")+(areaNote?'<br>'+esc(areaNote):""); return; }
     err.innerHTML=areaNote?esc(areaNote):"";  // all fields valid: clear errors, keep the out-of-area heads-up
