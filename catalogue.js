@@ -20,7 +20,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyVHxD4ZJXuUwvp8Q0q5JnM
 const MAX_BOOKS       = 4;
 /* Payment QR shown at checkout. Put your DuitNow/Maybank QR image in this
    folder (and in the GitHub repo) named exactly payment-qr.png. */
-const PAYMENT_QR_URL  = "payment-qr.png";
+const PAYMENT_QR_URL  = "payment-qr.png?v=2";
 const PAYEE_NAME      = "Justin Tiew Senn · Maybank";
 
 /* Bukutopia brand-kit cover-box tints (soft pink, mint, cream, blue, yellow, coral) */
@@ -715,7 +715,7 @@ function stepAccount(){
     <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Back</button>
       <button class="btn-wa" id="coGo" style="flex:1.4;justify-content:center">Continue</button></div>`);
   const form=coModal.querySelector("#coForm"), err=coModal.querySelector("#coErr");
-  const loginForm=`<label>WhatsApp number or email</label><input id="f_phone" placeholder="60123456789 or you@example.com"><div style="font-size:11px;color:#7c879b;margin-top:3px">Log in with the mobile number or email on your account.</div>
+  const loginForm=`<label>Email</label><input id="f_phone" type="email" inputmode="email" placeholder="you@example.com"><div style="font-size:11px;color:#7c879b;margin-top:3px">Log in with the email on your account.</div>
     <label>Password</label><input id="f_pass" type="password" placeholder="Your password">
     <a class="co-forgot" href="#" onclick="stepForgot();return false;">Forgot password?</a>`;
   const signupForm=`<label>Your name</label><input id="f_name" placeholder="Full name">
@@ -741,7 +741,8 @@ function stepAccount(){
     const name=mode==="signup"?g("#f_name"):"", addr=mode==="signup"?g("#f_addr"):"", email=mode==="signup"?g("#f_email"):"";
     const probs=[];
     if(mode==="signup"&&!name)probs.push("Please enter your name.");
-    if(!phone)probs.push(mode==="login"?"Please enter your WhatsApp number or email.":"Please enter your WhatsApp number.");
+    if(!phone)probs.push(mode==="login"?"Please enter your email.":"Please enter your WhatsApp number.");
+    else if(mode==="login"&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(phone))probs.push("Please enter a valid email address.");
     if(mode==="signup"){
       if(!email)probs.push("Please enter your email.");
       else if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))probs.push("Please enter a valid email address.");
@@ -763,7 +764,7 @@ function stepAccount(){
     err.textContent="Please wait…";
     try{
       let res;
-      if(mode==="login") res=await apiPub("login",{identifier:phone,whatsapp:phone,passcode:pass});
+      if(mode==="login") res=await apiPub("login",{identifier:phone,email:phone,passcode:pass});
       else res=await apiPub("signup",{name,email,whatsapp:phone,address:addr,passcode:pass});
       if(res.error){err.textContent=res.error;resetConfirm();return;}
       session={accountId:res.accountId,whatsapp:res.whatsapp||phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};session.hasPending=!!(res.pending&&res.pending.length);saveSession();
@@ -947,7 +948,7 @@ function accountForm(onSuccess){
       <button class="btn-wa" id="coGo" style="flex:1.4;justify-content:center">Continue</button></div>`);
   let mode="login";
   const form=coModal.querySelector("#coForm"), err=coModal.querySelector("#coErr");
-  const loginForm=`<label>WhatsApp number or email</label><input id="f_phone" placeholder="60123456789 or you@example.com"><div style="font-size:11px;color:#7c879b;margin-top:3px">Log in with the mobile number or email on your account.</div>
+  const loginForm=`<label>Email</label><input id="f_phone" type="email" inputmode="email" placeholder="you@example.com"><div style="font-size:11px;color:#7c879b;margin-top:3px">Log in with the email on your account.</div>
     <label>Password</label><input id="f_pass" type="password" placeholder="Your password">
     <a class="co-forgot" href="#" onclick="stepForgot();return false;">Forgot password?</a>`;
   const signupForm=`<label>Your name</label><input id="f_name" placeholder="Full name">
@@ -967,7 +968,8 @@ function accountForm(onSuccess){
     const name=mode==="signup"?g("#f_name"):"", addr=mode==="signup"?g("#f_addr"):"", email=mode==="signup"?g("#f_email"):"";
     const probs=[];
     if(mode==="signup"&&!name)probs.push("Please enter your name.");
-    if(!phone)probs.push(mode==="login"?"Please enter your WhatsApp number or email.":"Please enter your WhatsApp number.");
+    if(!phone)probs.push(mode==="login"?"Please enter your email.":"Please enter your WhatsApp number.");
+    else if(mode==="login"&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(phone))probs.push("Please enter a valid email address.");
     if(mode==="signup"){
       if(!email)probs.push("Please enter your email.");
       else if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))probs.push("Please enter a valid email address.");
@@ -982,7 +984,7 @@ function accountForm(onSuccess){
     err.textContent="Please wait…";
     try{
       const res = mode==="login"
-        ? await apiPub("login",{identifier:phone,whatsapp:phone,passcode:pass})
+        ? await apiPub("login",{identifier:phone,email:phone,passcode:pass})
         : await apiPub("signup",{name,email,whatsapp:phone,address:addr,passcode:pass});
       if(res.error){err.textContent=res.error;return;}
       session={accountId:res.accountId,whatsapp:res.whatsapp||phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};session.hasPending=!!(res.pending&&res.pending.length);saveSession();
