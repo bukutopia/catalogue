@@ -649,7 +649,9 @@ function stepForgot(){
     const email=(coModal.querySelector("#f_remail").value||"").trim();
     if(!email||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){err.textContent="Please enter a valid email address.";return;}
     err.textContent="Sending…";
-    try{ await apiPub("requestReset",{email:email}); }catch(e){}
+    let res;
+    try{ res=await apiPub("requestReset",{email:email}); }catch(e){ err.textContent="Couldn't connect. Please try again."; return; }
+    if(res&&res.error){ err.textContent=res.error; return; }
     show(`<h3 class="co-h">Check your email 📧</h3>
       <p class="co-sub">We've just sent a password reset link. It's valid for 30 minutes — please check your inbox (and spam folder).</p>
       <div class="co-row"><button class="btn-wa" id="coBack" style="flex:1;justify-content:center">Done</button></div>`);
