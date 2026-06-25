@@ -1032,7 +1032,7 @@ async function myAccountPanel(){
   if(session){ session.hasPending=active.some(o=>o.status==="Pending payment"&&String(o.paymentStatus)!=="Confirmed"); saveSession(); updateNavAuth(); }
   let listHtml;
   if(res.error){ listHtml=`<p class="co-sub">We couldn't load your orders just now. Please try again in a moment.</p>`; }
-  else if(active.length===0){ listHtml=`<div class="co-note">You have no orders yet. Add up to ${MAX_BOOKS} books and check out to get started. 📚</div>`; }
+  else if(active.length===0){ listHtml=`<div class="co-note">Welcome to Bukutopia. Your next book adventure is waiting. Add up to ${MAX_BOOKS} books to your cart and check out to get started! 📚</div>`; }
   else {
     listHtml=active.map(o=>{
       const ref=String(o.id).slice(0,4).toUpperCase();
@@ -1053,7 +1053,7 @@ async function myAccountPanel(){
     <p class="co-sub">${active.length?`Your ${active.length} order(s):`:"Your account"}</p>
     <div class="co-list">${listHtml}</div>
     <div class="co-row"><button class="btn-clear" id="coLogout" style="flex:1">Log out</button>
-      <button class="btn-wa" id="coClose" style="flex:1.4;justify-content:center">Done</button></div>`);
+      <button class="btn-wa" id="coClose" style="flex:1.4;justify-content:center">Let's go</button></div>`);
   coModal.querySelector("#coClose").onclick=closeCheckout;
   coModal.querySelector("#coLogout").onclick=()=>{ session=null; saveSession(); updateNavAuth(); closeCheckout(); };
   coModal.querySelectorAll(".pay-again").forEach(b=>b.onclick=()=>{
