@@ -557,7 +557,7 @@ async function apiPub(action,payload){
 function show(html){coModal.innerHTML='<button type="button" class="co-x" aria-label="Close" onclick="closeCheckout()">✕</button>'+html;modalBg.classList.add("show");}
 
 // --- Service area gate + out-of-area lead capture ---
-var COVERED_AREAS=["fennel","brightton"]; // address must contain one of these (case-insensitive)
+var COVERED_AREAS=["fennel","capers","brightton"]; // address must contain one of these (case-insensitive); "brightton" also matches "D'Brightton"
 function inServiceArea(addr){addr=String(addr||"").toLowerCase();return COVERED_AREAS.some(function(k){return addr.indexOf(k)>=0;});}
 var OUT_OF_AREA_MSG="Sorry, we don't cover your area just yet 💛 We've saved your details and will message you the moment we do.";
 async function captureLead(name,phone,addr){try{await apiPub("waitlist",{name:name||"",whatsapp:phone,address:addr});}catch(e){}}
@@ -763,7 +763,7 @@ function stepAccount(){
     if(mode==="signup"){
       if(!email)probs.push("Please enter your email.");
       else if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))probs.push("Please enter a valid email address.");
-      else { const sug=emailDomainSuggestion(email); if(sug)probs.push("Please check your email — did you mean "+sug+"?"); }
+      else { if(emailDomainSuggestion(email))probs.push("Please check your email again."); }
       if(!addr)probs.push("Please enter your delivery address.");
     }
     if(!pass)probs.push(mode==="signup"?"Please choose a password.":"Please enter your password.");
@@ -1010,7 +1010,7 @@ function accountForm(onSuccess){
     if(mode==="signup"){
       if(!email)probs.push("Please enter your email.");
       else if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))probs.push("Please enter a valid email address.");
-      else { const sug=emailDomainSuggestion(email); if(sug)probs.push("Please check your email — did you mean "+sug+"?"); }
+      else { if(emailDomainSuggestion(email))probs.push("Please check your email again."); }
       if(!addr)probs.push("Please enter your delivery address.");
     }
     if(!pass)probs.push(mode==="signup"?"Please choose a password.":"Please enter your password.");
