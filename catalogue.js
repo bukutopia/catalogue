@@ -772,16 +772,6 @@ function stepAccount(){
     const areaNote=(mode==="signup"&&addr&&!inServiceArea(addr))?"Heads up: we don't deliver to your area just yet — you can still sign up and we'll notify you when we do.":"";
     if(probs.length){ err.innerHTML=probs.map(esc).join("<br>")+(areaNote?'<br>'+esc(areaNote):""); return; }
     err.innerHTML=areaNote?esc(areaNote):"";  // all fields valid: clear errors, keep the out-of-area heads-up
-    if(mode==="signup" && !confirmed){  // up-front: flag an already-registered number/email before the double-check
-      goBtn.disabled=true;
-      let chk=null; try{ chk=await apiPub("checkContact",{whatsapp:phone,email:email}); }catch(e){}
-      goBtn.disabled=false;
-      if(chk){ const dup=[];
-        if(chk.phoneExists)dup.push("This WhatsApp number is already registered — please log in.");
-        if(chk.emailExists)dup.push("This email is already registered — please log in.");
-        if(dup.length){ err.innerHTML=dup.map(esc).join("<br>"); return; }
-      }
-    }
     if(mode==="signup" && !confirmed){  // returning users (login) skip the double-check and log in straight away
       // Flag a WhatsApp number / email that's already registered, before asking them to confirm.
       err.textContent="Checking…";
