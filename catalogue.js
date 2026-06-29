@@ -21,7 +21,7 @@ const MAX_BOOKS       = 4;
 /* Payment QR shown at checkout. Put your DuitNow/Maybank QR image in this
    folder (and in the GitHub repo) named exactly payment-qr.png. */
 const PAYMENT_QR_URL  = "payment-qr.png?v=2";
-const PAYEE_NAME      = "Justin Tiew Senn · Maybank";
+const PAYEE_NAME      = "Bukutopia · Maybank";
 
 /* Bukutopia brand-kit cover-box tints (soft pink, mint, cream, blue, yellow, coral) */
 const SERIES_COLORS = {
