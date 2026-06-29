@@ -901,13 +901,13 @@ async function stepConfirm(){
 
 function stepSignupOutOfArea(){
   show(`<h3 class="co-h">You're on the list! 💛</h3>
-    <p class="co-sub">📚 Thanks for signing up! We've got all your details and will let you know as soon as Bukutopia is available in your area.<br><br>We can't wait to bring great stories right to your doorstep! ✨</p>
+    <p class="co-sub">📚 Thanks for signing up! We've got all your details and will let you know as soon as Bukutopia is available in your area. In the meantime, feel free to explore!</p>
     <div class="co-row"><button class="btn-wa" id="coBack" style="flex:1;justify-content:center">Got it</button></div>`);
   coModal.querySelector("#coBack").onclick=closeCheckout;
 }
 function stepOutOfArea(order){
   show(`<h3 class="co-h">You're on the list! 💛</h3>
-    <p class="co-sub">📚 Thanks for signing up! We've got all your details and will let you know as soon as Bukutopia is available in your area.<br><br>We can't wait to bring great stories right to your doorstep! ✨</p>
+    <p class="co-sub">📚 Thanks for signing up! We've got all your details and will let you know as soon as Bukutopia is available in your area. In the meantime, feel free to explore!</p>
     <div class="co-row"><button class="btn-wa" id="coBack" style="flex:1;justify-content:center">Got it</button></div>`);
   coModal.querySelector("#coBack").onclick=closeCheckout;
 }
@@ -1061,7 +1061,7 @@ async function myAccountPanel(){
   let listHtml;
   if(res.error){ listHtml=`<p class="co-sub">We couldn't load your orders just now. Please try again in a moment.</p>`; }
   else if(active.length===0){ listHtml=(session&&session.outOfArea)
-    ? `<div class="co-note">📚 Thanks for signing up! We've got all your details and will let you know as soon as Bukutopia is available in your area.<br><br>We can't wait to bring great stories right to your doorstep! ✨</div>`
+    ? `<div class="co-note">📚 Thanks for signing up! We've got all your details and will let you know as soon as Bukutopia is available in your area. In the meantime, feel free to explore!</div>`
     : `<div class="co-note">✨ A world of stories awaits! Add up to ${MAX_BOOKS} books and check out to start your BUKUTOPIA journey!</div>`; }
   else {
     listHtml=active.map(o=>{
