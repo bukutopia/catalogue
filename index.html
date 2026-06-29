@@ -121,9 +121,10 @@
   .btn-wa:hover{background:#1eb155}
   .empty{text-align:center;padding:60px 20px;color:var(--muted);font-weight:600}
   .modal-bg{position:fixed;inset:0;background:rgba(16,49,96,.5);z-index:50;display:none;
-    align-items:center;justify-content:center;padding:20px}
+    align-items:center;justify-content:center;padding:20px;overflow-y:auto}
   .modal-bg.show{display:flex}
-  .modal{background:#fff;border-radius:22px;max-width:450px;width:100%;padding:26px;box-shadow:var(--shadow)}
+  .modal{background:#fff;border-radius:22px;max-width:450px;width:100%;padding:26px;box-shadow:var(--shadow);
+    max-height:calc(100vh - 40px);overflow-y:auto;-webkit-overflow-scrolling:touch}
   .modal h3{margin:0 0 6px;font-size:23px;color:var(--navy)}
   .modal p{font-size:14px;color:#475569;margin:0 0 14px}
   .modal .list{background:var(--cream);border-radius:14px;padding:13px 15px;margin-bottom:14px;
@@ -368,6 +369,6 @@
   <div class="modal" id="coModal"></div>
 </div>
 
-<script src="catalogue.js?v=65"></script>
+<script src="catalogue.js?v=66"></script>
 </body>
 </html>
