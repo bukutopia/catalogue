@@ -786,7 +786,8 @@ function stepAccount(){
       // Flag a WhatsApp number / email that's already registered, before asking them to confirm.
       err.textContent="Checking…";
       try{
-        const chk=await apiPub("checkContact",{whatsapp:phone,email:email});
+        // Time-boxed so a slow/hanging backend never blocks the confirm prompts (duplicates are still caught on submit).
+        const chk=await Promise.race([apiPub("checkContact",{whatsapp:phone,email:email}),new Promise(r=>setTimeout(()=>r(null),4000))]);
         const dup=[];
         if(chk&&chk.phoneExists)dup.push("This WhatsApp number is already registered — please log in.");
         if(chk&&chk.emailExists)dup.push("This email is already registered — please log in.");
