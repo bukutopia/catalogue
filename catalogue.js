@@ -963,11 +963,14 @@ function accountForm(onSuccess){
     <p class="co-sub">Log in to see your orders, or create an account.</p>
     <div class="co-tabs"><button class="co-tab on" id="tabLogin">I have an account</button>
       <button class="co-tab" id="tabSignup">Create account</button></div>
-    <div id="coForm"></div><div class="co-err" id="coErr"></div>
+    <div id="coForm"></div><div class="co-confirm" id="coConfirm" hidden></div><div class="co-err" id="coErr"></div>
     <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Close</button>
       <button class="btn-wa" id="coGo" style="flex:1.4;justify-content:center">Continue</button></div>`);
   let mode="login";
-  const form=coModal.querySelector("#coForm"), err=coModal.querySelector("#coErr");
+  const form=coModal.querySelector("#coForm"), err=coModal.querySelector("#coErr"), confBox=coModal.querySelector("#coConfirm"), goBtn=coModal.querySelector("#coGo");
+  let confirmed=false;
+  function resetConfirm(){confirmed=false;goBtn.textContent="Continue";if(confBox){confBox.hidden=true;confBox.innerHTML="";}}
+  form.addEventListener("input",resetConfirm);
   const loginForm=`<label>WhatsApp number</label><input id="f_phone" inputmode="numeric" placeholder="60123456789"><div style="font-size:11px;color:#7c879b;margin-top:3px">Non-Malaysian number? Add your country code (example 44…).</div>
     <label>Password</label><input id="f_pass" type="password" placeholder="Your password">
     <a class="co-forgot" href="#" onclick="stepForgot();return false;">Forgot password?</a>`;
@@ -979,10 +982,10 @@ function accountForm(onSuccess){
     <label>Confirm password</label><input id="f_pass2" type="password" placeholder="Re-enter your password">`;
   function paint(){form.innerHTML=mode==="login"?loginForm:signupForm;err.textContent="";}
   paint();
-  coModal.querySelector("#tabLogin").onclick=()=>{mode="login";coModal.querySelector("#tabLogin").classList.add("on");coModal.querySelector("#tabSignup").classList.remove("on");paint();};
-  coModal.querySelector("#tabSignup").onclick=()=>{mode="signup";coModal.querySelector("#tabSignup").classList.add("on");coModal.querySelector("#tabLogin").classList.remove("on");paint();};
+  coModal.querySelector("#tabLogin").onclick=()=>{mode="login";coModal.querySelector("#tabLogin").classList.add("on");coModal.querySelector("#tabSignup").classList.remove("on");resetConfirm();paint();};
+  coModal.querySelector("#tabSignup").onclick=()=>{mode="signup";coModal.querySelector("#tabSignup").classList.add("on");coModal.querySelector("#tabLogin").classList.remove("on");resetConfirm();paint();};
   coModal.querySelector("#coBack").onclick=closeCheckout;
-  coModal.querySelector("#coGo").onclick=async()=>{
+  goBtn.onclick=async()=>{
     const g=id=>{const el=coModal.querySelector(id);return el?el.value.trim():"";};
     const phone=g("#f_phone"), pass=g("#f_pass"), pass2=g("#f_pass2");
     const name=mode==="signup"?g("#f_name"):"", addr=mode==="signup"?g("#f_addr"):"", email=mode==="signup"?g("#f_email"):"";
@@ -1001,12 +1004,17 @@ function accountForm(onSuccess){
     const areaNote=(mode==="signup"&&addr&&!inServiceArea(addr))?"Heads up: we don't deliver to your area just yet — you can still sign up and we'll notify you when we do.":"";
     if(probs.length){ err.innerHTML=probs.map(esc).join("<br>")+(areaNote?'<br>'+esc(areaNote):""); return; }
     err.innerHTML=areaNote?esc(areaNote):"";  // all fields valid: clear errors, keep the out-of-area heads-up
+    if(mode==="signup" && !confirmed){  // show the double-check box for every sign-up (duplicates caught on submit)
+      confBox.hidden=false;
+      confBox.innerHTML=`<b>Please double-check these are correct 👇</b><br>📱 WhatsApp: <b>${esc(phone)}</b><br>✉️ Email: <b>${esc(email)}</b><br>📦 Delivery address: <b>${esc(addr)}</b><br><span style="color:#7c879b">We'll deliver here and message you on this number.</span>`;
+      confirmed=true; goBtn.textContent="Yes, that's correct"; return;
+    }
     err.textContent="Please wait…";
     try{
       const res = mode==="login"
         ? await apiPub("login",{whatsapp:phone,passcode:pass})
         : await apiPub("signup",{name,email,whatsapp:phone,address:addr,passcode:pass});
-      if(res.error){err.textContent=res.error;return;}
+      if(res.error){err.textContent=res.error;resetConfirm();return;}
       session={accountId:res.accountId,whatsapp:res.whatsapp||phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};session.outOfArea=(mode==="signup"?!inServiceArea(addr):(res.address?!inServiceArea(res.address):false));session.hasPending=!!(res.pending&&res.pending.length);saveSession();
       onSuccess();
     }catch(e){err.textContent="Couldn't connect. Please try again.";}
