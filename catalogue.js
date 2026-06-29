@@ -1061,9 +1061,7 @@ async function myAccountPanel(){
   if(session){ session.hasPending=active.some(o=>o.status==="Pending payment"&&String(o.paymentStatus)!=="Confirmed"); saveSession(); updateNavAuth(); }
   let listHtml;
   if(res.error){ listHtml=`<p class="co-sub">We couldn't load your orders just now. Please try again in a moment.</p>`; }
-  else if(active.length===0){ const ooa=(res.address!=null&&res.address!=="")?!inServiceArea(res.address):!!(session&&session.outOfArea); listHtml=ooa
-    ? `<div class="co-note">📚 Thanks for signing up! We've got all your details and will let you know as soon as Bukutopia is available in your area. In the meantime, feel free to explore!</div>`
-    : `<div class="co-note">✨ A world of stories awaits! Add up to ${MAX_BOOKS} books and check out to start your BUKUTOPIA journey!</div>`; }
+  else if(active.length===0){ listHtml=`<div class="co-note">✨ A world of stories awaits! Add up to ${MAX_BOOKS} books and check out to start your BUKUTOPIA journey!</div>`; }
   else {
     listHtml=active.map(o=>{
       const ref=String(o.id).slice(0,4).toUpperCase();
