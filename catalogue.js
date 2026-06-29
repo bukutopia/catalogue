@@ -805,7 +805,7 @@ function stepAccount(){
       if(mode==="login") res=await apiPub("login",{whatsapp:phone,passcode:pass});
       else res=await apiPub("signup",{name,email,whatsapp:phone,address:addr,passcode:pass});
       if(res.error){err.textContent=res.error;resetConfirm();return;}
-      session={accountId:res.accountId,whatsapp:res.whatsapp||phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};session.hasPending=!!(res.pending&&res.pending.length);saveSession();
+      session={accountId:res.accountId,whatsapp:res.whatsapp||phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};session.outOfArea=(mode==="signup"?!inServiceArea(addr):(res.address?!inServiceArea(res.address):false));session.hasPending=!!(res.pending&&res.pending.length);saveSession();
       updateNavAuth();
       // New sign-up from an area we don't serve yet: capture the lead, drop their book picks,
       // and show a friendly "we'll notify you" message instead of the order/deposit screen.
@@ -901,13 +901,13 @@ async function stepConfirm(){
 
 function stepSignupOutOfArea(){
   show(`<h3 class="co-h">You're on the list! 💛</h3>
-    <p class="co-sub">Thanks for signing up with Bukutopia! We'll notify you once we "unlock" your area — your next book adventure is loading…</p>
+    <p class="co-sub">📚 Thanks for signing up! We've got all your details and will let you know as soon as Bukutopia is available in your area.<br><br>We can't wait to bring great stories right to your doorstep! ✨</p>
     <div class="co-row"><button class="btn-wa" id="coBack" style="flex:1;justify-content:center">Got it</button></div>`);
   coModal.querySelector("#coBack").onclick=closeCheckout;
 }
 function stepOutOfArea(order){
-  show(`<h3 class="co-h">You're on the list 💛</h3>
-    <p class="co-sub">We don't deliver to your area just yet — but we've saved your details and we'll message you the moment Bukutopia launches near you. No payment needed now.</p>
+  show(`<h3 class="co-h">You're on the list! 💛</h3>
+    <p class="co-sub">📚 Thanks for signing up! We've got all your details and will let you know as soon as Bukutopia is available in your area.<br><br>We can't wait to bring great stories right to your doorstep! ✨</p>
     <div class="co-row"><button class="btn-wa" id="coBack" style="flex:1;justify-content:center">Got it</button></div>`);
   coModal.querySelector("#coBack").onclick=closeCheckout;
 }
@@ -1025,7 +1025,7 @@ function accountForm(onSuccess){
         ? await apiPub("login",{whatsapp:phone,passcode:pass})
         : await apiPub("signup",{name,email,whatsapp:phone,address:addr,passcode:pass});
       if(res.error){err.textContent=res.error;return;}
-      session={accountId:res.accountId,whatsapp:res.whatsapp||phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};session.hasPending=!!(res.pending&&res.pending.length);saveSession();
+      session={accountId:res.accountId,whatsapp:res.whatsapp||phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};session.outOfArea=(mode==="signup"?!inServiceArea(addr):(res.address?!inServiceArea(res.address):false));session.hasPending=!!(res.pending&&res.pending.length);saveSession();
       onSuccess();
     }catch(e){err.textContent="Couldn't connect. Please try again.";}
   };
@@ -1060,7 +1060,9 @@ async function myAccountPanel(){
   if(session){ session.hasPending=active.some(o=>o.status==="Pending payment"&&String(o.paymentStatus)!=="Confirmed"); saveSession(); updateNavAuth(); }
   let listHtml;
   if(res.error){ listHtml=`<p class="co-sub">We couldn't load your orders just now. Please try again in a moment.</p>`; }
-  else if(active.length===0){ listHtml=`<div class="co-note">✨ A world of stories awaits! Add up to ${MAX_BOOKS} books and check out to start your BUKUTOPIA journey!</div>`; }
+  else if(active.length===0){ listHtml=(session&&session.outOfArea)
+    ? `<div class="co-note">📚 Thanks for signing up! We've got all your details and will let you know as soon as Bukutopia is available in your area.<br><br>We can't wait to bring great stories right to your doorstep! ✨</div>`
+    : `<div class="co-note">✨ A world of stories awaits! Add up to ${MAX_BOOKS} books and check out to start your BUKUTOPIA journey!</div>`; }
   else {
     listHtml=active.map(o=>{
       const ref=String(o.id).slice(0,4).toUpperCase();
