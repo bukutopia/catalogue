@@ -513,7 +513,7 @@ const CHECKOUT_CSS=`
 #coModal input{width:100%;padding:10px 12px;border:1px solid #e0d6c2;border-radius:9px;font:inherit;font-size:14px}
 #coModal .co-note{background:#fff8e6;border:1px solid #f1d889;border-radius:9px;padding:11px 13px;font-size:13px;color:#5a4a2a;margin:12px 0}
 #coModal .co-err{color:#c0392b;font-size:13px;margin:8px 0 0;min-height:16px}
-#coModal .co-row{display:flex;gap:10px;margin-top:14px}
+#coModal .co-row{display:flex;gap:10px;margin-top:14px;position:sticky;bottom:-26px;background:#fff;padding:12px 0;box-shadow:0 -8px 12px -8px rgba(16,49,96,.18);z-index:2}
 #coModal .co-tabs{display:flex;gap:8px;margin:2px 0 6px}
 #coModal .co-tab{flex:1;padding:9px;border:1px solid #e0d6c2;border-radius:9px;background:#fff;font:inherit;font-weight:700;color:#103160;cursor:pointer}
 #coModal .co-tab.on{background:#103160;color:#fff;border-color:#103160}
