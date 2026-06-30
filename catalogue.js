@@ -894,7 +894,7 @@ function stepOutOfArea(order){
   coModal.querySelector("#coBack").onclick=closeCheckout;
 }
 function stepPay(order){
-  const ref=order.ref||String(order.id).slice(0,4).toUpperCase();
+  const ref=order.ref||(order.orderNo?String(order.orderNo).padStart(4,"0"):String(order.id).slice(0,4).toUpperCase());
   const deposit=order.type==="deposit";
   const typeText=deposit?"refundable deposit only, first month free rental":"rental checkout";
   const tpl=(typeof SITE_MSGS!=="undefined"&&SITE_MSGS.checkout)?SITE_MSGS.checkout
@@ -1078,7 +1078,7 @@ async function myAccountPanel(){
   coModal.querySelector("#coLogout").onclick=()=>{ session=null; saveSession(); updateNavAuth(); closeCheckout(); };
   coModal.querySelectorAll(".pay-again").forEach(b=>b.onclick=()=>{
     const o=orders.find(x=>String(x.id)===b.dataset.id);
-    if(o) stepPay({id:o.id,titles:o.titles,amount:o.amount,type:o.type});
+    if(o) stepPay({id:o.id,ref:o.ref,orderNo:o.orderNo,titles:o.titles,amount:o.amount,type:o.type});
   });
 }
 
