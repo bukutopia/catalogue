@@ -909,6 +909,7 @@ function stepPay(order){
         onerror="this.style.display='none';document.getElementById('qrFallback').style.display='block'">
       <div id="qrFallback" style="display:none;font-size:13px;color:#5a4a2a;background:#fff8e6;border:1px solid #f1d889;border-radius:9px;padding:11px 13px">Pay by DuitNow to <b>${esc(PAYEE_NAME)}</b>, then send your receipt below.</div>
       <div style="font-size:12.5px;color:#7c879b;margin-top:6px">Scan with any banking app · ${esc(PAYEE_NAME)}</div>
+      <div style="font-size:12.5px;color:#5a6b7a;margin-top:8px;line-height:1.6">Account name: <b>Bukutopia Book Rental</b><br>Account number: <b>5640 6154 9833</b><br>Bank: <b>Maybank</b></div>
     </div>
     <div class="co-note"><b>1.</b> Scan the QR and pay ${money(order.amount)}.<br>
       <b>2.</b> Tap the button below and attach your receipt screenshot.<br>
