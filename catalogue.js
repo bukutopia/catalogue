@@ -1016,6 +1016,8 @@ function accountForm(onSuccess){
         : await apiPub("signup",{name,email,whatsapp:phone,address:addr,passcode:pass});
       if(res.error){err.textContent=res.error;resetConfirm();return;}
       session={accountId:res.accountId,whatsapp:res.whatsapp||phone,passcode:pass,name:res.name,firstOrder:res.isFirstOrder};session.outOfArea=(mode==="signup"?!inServiceArea(addr):(res.address?!inServiceArea(res.address):false));session.hasPending=!!(res.pending&&res.pending.length);saveSession();
+      // First-time sign-up from an area we don't serve yet: capture the lead and show the waitlist message.
+      if(mode==="signup" && !inServiceArea(addr)){ try{apiPub("waitlist",{name:name,whatsapp:phone,address:addr});}catch(e){} updateNavAuth(); stepSignupOutOfArea(); return; }
       onSuccess();
     }catch(e){err.textContent="Couldn't connect. Please try again.";}
   };
