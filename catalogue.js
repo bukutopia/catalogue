@@ -859,7 +859,7 @@ async function stepConfirm(){
   show(`<h3 class="co-h">Hi ${esc(session.name||"there")} 👋</h3>
     <p class="co-sub">${coItems.length} book(s) — ${coItems.map(i=>esc(i.title)).join(", ")}</p>
     ${first
-      ? `<div class="co-note"><b>First order</b> — your first month is on us. You pay only the <b>RM${PUBLIC_SETTINGS.deposit||60} refundable deposit</b> to get started.</div><div class="co-big">${money(amount)} <span style="font-size:13px;color:#7c879b;font-weight:600">refundable deposit</span></div>`
+      ? `<div class="co-note"><b>First order</b> — your first month rental is on us. You pay only the <b>RM${PUBLIC_SETTINGS.deposit||60} refundable deposit</b> to get started.</div><div class="co-big">${money(amount)} <span style="font-size:13px;color:#7c879b;font-weight:600">refundable deposit</span></div>`
       : `<div class="co-note">Returning order — pay the rental total below.</div><div class="co-big">${money(amount)}</div>`}
     <div class="co-err" id="coErr"></div>
     <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Back</button>
