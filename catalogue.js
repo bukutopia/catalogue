@@ -1280,6 +1280,7 @@ function buildBooksFromSheet(rows){
     }
   });
   var list=order.map(function(k){ return map[k]; }).filter(function(s){ return s.books.length; });
+  list.reverse(); // newest-added series first (new series are appended to the bottom of the sheet)
   list.forEach(function(s){ s.available = s.books.some(function(b){ return b.available!==false; }); });
   return list;
 }
