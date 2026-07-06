@@ -145,6 +145,14 @@
   footer .contact a{color:#fff;text-decoration:none}
   footer .terms{font-size:12px;color:#9fb0cc;max-width:620px;margin:14px auto 0;line-height:1.7}
   footer .srcnote{font-size:11px;color:#6f83a6;margin-top:12px}
+  footer .foot-inner{display:flex;flex-wrap:wrap;gap:24px 46px;align-items:center;justify-content:center;max-width:1040px;margin:0 auto}
+  footer .foot-brand{flex:0 0 auto}
+  footer .feedback-box{flex:1 1 300px;max-width:440px;text-align:left}
+  footer .feedback-box .fb-title{font-size:14px;font-weight:700;color:#eaf1fb;line-height:1.5;margin-bottom:10px}
+  footer .feedback-box textarea,footer .feedback-box input{width:100%;box-sizing:border-box;border:none;border-radius:10px;padding:10px 12px;font:inherit;font-size:14px;color:#1e2a3a;background:#fff;margin-bottom:8px;resize:vertical}
+  footer .feedback-box button{background:var(--coral);color:#fff;border:none;border-radius:10px;padding:10px 20px;font:inherit;font-weight:800;font-size:14px;cursor:pointer}
+  footer .feedback-box button:disabled{opacity:.6;cursor:default}
+  footer .feedback-box .fb-note{font-size:12.5px;color:var(--yellow);margin-top:8px;min-height:15px;font-weight:700}
   @media(max-width:520px){.grid{grid-template-columns:1fr}.cart-titles{display:none}}
 
   html{scroll-behavior:smooth}
@@ -342,12 +350,23 @@
 </div></section>
 
 <footer>
-  <div class="flogo">
-    <img src="b%20color.png?v=3" class="footer-badge" alt="Bukutopia — read more. own less." />
-  </div>
-  <div class="contact">
-    <a href="mailto:hellobukutopia@gmail.com">hellobukutopia@gmail.com</a><br/>
-    Kuala Lumpur, Malaysia
+  <div class="foot-inner">
+    <form class="feedback-box" id="feedbackBox" onsubmit="return false;">
+      <div class="fb-title">Don't see a book you love? Have feedback or a request for us? We'd love to hear it! 💛</div>
+      <textarea id="fbMsg" rows="3" placeholder="Your message…"></textarea>
+      <input id="fbContact" type="text" placeholder="Your name / WhatsApp / email (optional)" />
+      <button type="submit" id="fbSend">Submit</button>
+      <div class="fb-note" id="fbNote"></div>
+    </form>
+    <div class="foot-brand">
+      <div class="flogo">
+        <img src="b%20color.png?v=3" class="footer-badge" alt="Bukutopia — read more. own less." />
+      </div>
+      <div class="contact">
+        <a href="mailto:hellobukutopia@gmail.com">hellobukutopia@gmail.com</a><br/>
+        Kuala Lumpur, Malaysia
+      </div>
+    </div>
   </div>
   <div class="srcnote" id="srcnote"></div>
 </footer>
@@ -372,6 +391,6 @@
   <div class="modal" id="coModal"></div>
 </div>
 
-<script src="catalogue.js?v=83"></script>
+<script src="catalogue.js?v=84"></script>
 </body>
 </html>

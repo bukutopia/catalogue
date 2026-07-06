@@ -1356,3 +1356,21 @@ async function init(){
 }
 ["search","age","avail"].forEach(id=>document.getElementById(id).addEventListener("input",render));
 init();
+
+// ---- Footer feedback form ----
+(function(){
+  var btn=document.getElementById("fbSend");
+  if(!btn) return;
+  btn.addEventListener("click",async function(){
+    var msgEl=document.getElementById("fbMsg"), conEl=document.getElementById("fbContact"), note=document.getElementById("fbNote");
+    var msg=(msgEl.value||"").trim(), contact=(conEl.value||"").trim();
+    if(!msg){ note.textContent="Please write a message first."; return; }
+    btn.disabled=true; note.textContent="Sending…";
+    try{
+      await apiPub("feedback",{message:msg,contact:contact});
+      note.textContent="Thank you — we've got your feedback! 💛";
+      msgEl.value=""; conEl.value="";
+    }catch(e){ note.textContent="Couldn't send just now — please try again."; }
+    btn.disabled=false;
+  });
+})();
