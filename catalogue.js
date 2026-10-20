@@ -634,15 +634,28 @@ var pendingAuthMode="login"; // which tab the "Almost there" screen opens on, se
 function stepReview(){
   // Logged-in customers keep the simple review + checkout.
   if(session){
-    show(`<h3 class="co-h">Your book list</h3>
-      <p class="co-sub">${coItems.length} of ${MAX_BOOKS} books.</p>
-      <div class="co-list">${liRows()}</div>
-      <div class="co-row">
-        <button class="btn-clear" id="coBack" style="flex:1">Keep browsing</button>
-        <button class="btn-wa" id="coNext" style="flex:1.4;justify-content:center">Check out</button>
-      </div>`);
-    coModal.querySelector("#coBack").onclick=closeCheckout;
-    coModal.querySelector("#coNext").onclick=stepAvailability;
+    // Logged-in review: list with a per-book × so they can drop titles before checkout.
+    const drawReview=()=>{
+      const rows=coItems.map(it=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed #eadfca">
+        <span style="font-size:14px;color:#243447;font-weight:600">${esc(it.title)} <span style="color:#9a8a72;font-weight:500">— ${esc(it.series)}</span></span>
+        <button class="co-trim-x" data-key="${escAttr(it.key)}" aria-label="Remove ${escAttr(it.title)}" style="flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:1.5px solid #e9c4bb;background:#fff;color:#c0503a;font-size:18px;font-weight:800;cursor:pointer;line-height:1">×</button>
+      </div>`).join("");
+      show(`<h3 class="co-h">Your book list</h3>
+        <p class="co-sub">${coItems.length} of ${MAX_BOOKS} books.</p>
+        <div class="co-list">${rows}</div>
+        <div class="co-row">
+          <button class="btn-clear" id="coBack" style="flex:1">Keep browsing</button>
+          <button class="btn-wa" id="coNext" style="flex:1.4;justify-content:center">Check out</button>
+        </div>`);
+      coModal.querySelectorAll(".co-trim-x").forEach(b=>b.onclick=()=>{
+        cart.delete(b.dataset.key); updateCart(); refreshAllCards(); coItems=cartItems();
+        if(coItems.length===0){ closeCheckout(); return; }
+        drawReview();
+      });
+      coModal.querySelector("#coBack").onclick=closeCheckout;
+      coModal.querySelector("#coNext").onclick=stepAvailability;
+    };
+    drawReview();
     return;
   }
   // Not logged in → gate on login / sign up.
