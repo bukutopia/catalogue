@@ -526,7 +526,14 @@ const CHECKOUT_CSS=`
 #coModal .co-forgot:hover{color:#d15e45}
 #coModal{position:relative}
 #coModal .co-x{position:absolute;top:8px;right:10px;width:30px;height:30px;border:none;background:none;font-size:17px;line-height:1;color:#9aa6b8;cursor:pointer;border-radius:8px}
-#coModal .co-x:hover{background:#f1ece2;color:#103160}`;
+#coModal .co-x:hover{background:#f1ece2;color:#103160}
+#coModal .pay-summary{border:1px solid #eadfca;border-radius:12px;padding:8px 14px;margin:0 0 14px;background:#fffdf8}
+#coModal .pay-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed #eadfca;font-size:14px;color:#243447}
+#coModal .pay-row:last-child{border-bottom:none}
+#coModal .pay-row.pay-sub{color:#5a6b7a;font-weight:600}
+#coModal .pay-row.pay-total{font-weight:800;color:#103160;font-size:16px;border-top:1.5px solid #e0d6c2;border-bottom:none;padding-top:10px;margin-top:2px}
+#coModal .pay-cust{border:1px solid #eadfca;border-radius:12px;padding:12px 14px;margin:14px 0 2px;font-size:13.5px;color:#243447;line-height:1.9}
+#coModal .pay-cust b{color:#103160}`;
 
 const modalBg=document.getElementById("modalBg");
 const coModal=document.getElementById("coModal");
@@ -853,14 +860,16 @@ async function stepConfirm(){
     coModal.querySelector("#coBack").onclick=()=>stepTrimCart();
     return;
   }
-  const total=coItems.reduce((s,it)=>s+it.price,0);
+  const ship=Number((PUBLIC_SETTINGS&&PUBLIC_SETTINGS.shipping)||5);
+  const subtotal=coItems.reduce((s,it)=>s+it.price,0);
   const first=session.firstOrder;
-  const amount=first?Number(PUBLIC_SETTINGS.deposit||60):total;
+  const base=first?Number(PUBLIC_SETTINGS.deposit||60):subtotal;
+  const amount=base+ship;
   show(`<h3 class="co-h">Hi ${esc(session.name||"there")} 👋</h3>
     <p class="co-sub">${coItems.length} book(s) — ${coItems.map(i=>esc(i.title)).join(", ")}</p>
     ${first
-      ? `<div class="co-note"><b>First order</b> — your first month rental is on us. You pay only the <b>RM${PUBLIC_SETTINGS.deposit||60} refundable deposit</b> to get started.</div><div class="co-big">${money(amount)} <span style="font-size:13px;color:#7c879b;font-weight:600">refundable deposit</span></div>`
-      : `<div class="co-note">Returning order — pay the rental total below.</div><div class="co-big">${money(amount)}</div>`}
+      ? `<div class="co-note"><b>First order</b> — your first month rental is on us. You pay the <b>RM${PUBLIC_SETTINGS.deposit||60} refundable deposit</b> plus <b>${money(ship)} shipping</b>.</div><div class="co-big">${money(amount)} <span style="font-size:13px;color:#7c879b;font-weight:600">deposit + shipping</span></div>`
+      : `<div class="co-note">Returning order — rental ${money(subtotal)} + ${money(ship)} shipping.</div><div class="co-big">${money(amount)}</div>`}
     <div class="co-err" id="coErr"></div>
     <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Back</button>
       <button class="btn-wa" id="coPlace" style="flex:1.4;justify-content:center">Place order</button></div>`);
@@ -896,24 +905,51 @@ function stepOutOfArea(order){
 function stepPay(order){
   const ref=order.ref||(order.orderNo?String(order.orderNo).padStart(4,"0"):String(order.id).slice(0,4).toUpperCase());
   const deposit=order.type==="deposit";
+  // Shipping, line items, subtotal and total come from the backend; fall back gracefully if an
+  // older backend hasn't been redeployed yet (coItems still holds the picks + prices).
+  const ship=(order.shipping!=null)?Number(order.shipping):5;
+  const items=(order.items&&order.items.length)?order.items
+    :coItems.map(it=>({isbn:it.isbn,title:it.title,price:Number(it.price)||0}));
+  const subtotal=(order.subtotal!=null)?Number(order.subtotal)
+    :(deposit?Number(PUBLIC_SETTINGS.deposit||60):items.reduce((s,it)=>s+(Number(it.price)||0),0));
+  const total=(order.amount!=null)?Number(order.amount):(subtotal+ship);
+  const cust={
+    name:order.name||session.name||"",
+    contact:order.whatsapp||(session&&session.whatsapp)||"",
+    email:order.email||"",
+    address:order.address||(session&&session.address)||""
+  };
+  const bookRows=items.map(it=>`<div class="pay-row"><span>${esc(it.title)}</span><span>${deposit?'<span style="color:#1f8a4c;font-weight:700">Free</span>':money(Number(it.price)||0)}</span></div>`).join("");
+
   const typeText=deposit?"refundable deposit only, first month free rental":"rental checkout";
   const tpl=(typeof SITE_MSGS!=="undefined"&&SITE_MSGS.checkout)?SITE_MSGS.checkout
     :"Hi Bukutopia! 📚 Order {ref} — {titles}. I'm paying {amount} ({type}). My payment receipt is attached. 🙏";
-  const msg=tpl.replace(/\{ref\}/g,ref).replace(/\{titles\}/g,order.titles).replace(/\{amount\}/g,money(order.amount)).replace(/\{type\}/g,typeText);
+  const msg=tpl.replace(/\{ref\}/g,ref).replace(/\{titles\}/g,order.titles||items.map(i=>i.title).join(", ")).replace(/\{amount\}/g,money(total)).replace(/\{type\}/g,typeText);
   const link=`https://wa.me/${waNum()}?text=${encodeURIComponent(msg)}`;
   show(`<h3 class="co-h">Order placed — ref ${ref} 🎉</h3>
-    <p class="co-sub">To complete checkout, please pay and send us your receipt on WhatsApp <b>within 24 hours</b>. Unpaid orders are released automatically after that.</p>
+    <div class="pay-summary">
+      ${bookRows}
+      ${deposit
+        ? `<div class="pay-row"><span>First month rental</span><span style="color:#1f8a4c;font-weight:700">FREE</span></div>
+           <div class="pay-row"><span>Refundable deposit</span><span>${money(subtotal)}</span></div>`
+        : `<div class="pay-row pay-sub"><span>Subtotal</span><span>${money(subtotal)}</span></div>`}
+      <div class="pay-row"><span>Shipping (flat)</span><span>${money(ship)}</span></div>
+      <div class="pay-row pay-total"><span>Total</span><span>${money(total)}</span></div>
+    </div>
+    <p class="co-sub">To complete checkout, please scan the QR and send us your receipt on WhatsApp <b>within 24 hours</b>. Unpaid orders are released automatically after that.</p>
     <div style="text-align:center;margin:4px 0 10px">
-      <div class="co-big">${money(order.amount)}</div>
       <img src="${PAYMENT_QR_URL}" alt="Payment QR" style="width:210px;height:210px;object-fit:contain;border:1px solid #eadfca;border-radius:12px;padding:8px;background:#fff"
         onerror="this.style.display='none';document.getElementById('qrFallback').style.display='block'">
       <div id="qrFallback" style="display:none;font-size:13px;color:#5a4a2a;background:#fff8e6;border:1px solid #f1d889;border-radius:9px;padding:11px 13px">Pay by DuitNow to <b>${esc(PAYEE_NAME)}</b>, then send your receipt below.</div>
-      <div style="font-size:12.5px;color:#7c879b;margin-top:6px">Scan with any banking app · ${esc(PAYEE_NAME)}</div>
+      <div style="font-size:12.5px;color:#7c879b;margin-top:6px">Scan with any banking app · ${esc(PAYEE_NAME)} · Maybank</div>
       <div style="font-size:12.5px;color:#5a6b7a;margin-top:8px;line-height:1.6">Account name: <b>Bukutopia Book Rental</b><br>Account number: <b>5640 6154 9833</b><br>Bank: <b>Maybank</b></div>
     </div>
-    <div class="co-note"><b>1.</b> Scan the QR and pay ${money(order.amount)}.<br>
-      <b>2.</b> Tap the button below and attach your receipt screenshot.<br>
-      <b>3.</b> We'll confirm, pack your books and arrange delivery. 📦</div>
+    <div class="pay-cust">
+      <div><b>Name:</b> ${esc(cust.name)||"—"}</div>
+      <div><b>Contact:</b> ${esc(cust.contact)||"—"}</div>
+      <div><b>Email address:</b> ${esc(cust.email)||"—"}</div>
+      <div><b>Shipping address:</b> ${esc(cust.address)||"—"}</div>
+    </div>
     <div class="co-row"><a class="btn-wa" id="coWa" href="${link}" target="_blank" style="flex:1;justify-content:center;text-decoration:none">Send receipt on WhatsApp</a></div>`);
   coModal.querySelector("#coWa").onclick=()=>{setTimeout(closeCheckout,400);};
   if(session){ session.hasPending=true; saveSession(); } updateNavAuth();
