@@ -873,34 +873,30 @@ async function stepConfirm(){
     coModal.querySelector("#coBack").onclick=()=>stepTrimCart();
     return;
   }
-  const ship=Number((PUBLIC_SETTINGS&&PUBLIC_SETTINGS.shipping)||5);
-  const subtotal=coItems.reduce((s,it)=>s+it.price,0);
-  const first=session.firstOrder;
-  const base=first?Number(PUBLIC_SETTINGS.deposit||60):subtotal;
-  const amount=base+ship;
-  show(`<h3 class="co-h">Hi ${esc(session.name||"there")} 👋</h3>
-    <p class="co-sub">${coItems.length} book(s) — ${coItems.map(i=>esc(i.title)).join(", ")}</p>
-    ${first
-      ? `<div class="co-note"><b>First order</b> — your first month rental is on us. You pay the <b>RM${PUBLIC_SETTINGS.deposit||60} refundable deposit</b> plus <b>${money(ship)} shipping</b>.</div><div class="co-big">${money(amount)}</div>`
-      : `<div class="co-note">Returning order — rental ${money(subtotal)} + ${money(ship)} shipping.</div><div class="co-big">${money(amount)}</div>`}
-    <div class="co-err" id="coErr"></div>
-    <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Back</button>
-      <button class="btn-wa" id="coPlace" style="flex:1.4;justify-content:center">Place order</button></div>`);
-  coModal.querySelector("#coBack").onclick=stepReview;
-  coModal.querySelector("#coPlace").onclick=async()=>{
-    const err=coModal.querySelector("#coErr"); err.textContent="Placing your order…";
-    try{
-      const res=await apiPub("createOrder",{whatsapp:session.whatsapp,passcode:session.passcode,
-        items:coItems.map(it=>({isbn:it.isbn,title:it.title,price:it.price}))});
-      if(res.error){
-        if(res.error==="unavailable"){err.textContent="";stepAvailability();return;}
-        err.textContent=res.error;return;
-      }
-      cart.clear();updateCart();render();
-      if(res.outOfArea){ stepOutOfArea(res.order); return; }
-      stepPay(res.order);
-    }catch(e){err.textContent="Couldn't place the order. Please try again.";}
-  };
+  // Confirmation screen removed — place the order directly and go to the Order Placed page.
+  show(`<h3 class="co-h">Placing your order…</h3>
+    <p class="co-sub">One moment while we reserve your books. 📚</p>
+    <div class="co-err" id="coErr"></div>`);
+  const err=coModal.querySelector("#coErr");
+  function failScreen(m){
+    show(`<h3 class="co-h">That didn't go through</h3>
+      <p class="co-sub">${esc(m)}</p>
+      <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Back to my cart</button>
+        <button class="btn-wa" id="coRetry" style="flex:1.4;justify-content:center">Try again</button></div>`);
+    coModal.querySelector("#coBack").onclick=()=>stepTrimCart();
+    coModal.querySelector("#coRetry").onclick=stepConfirm;
+  }
+  try{
+    const res=await apiPub("createOrder",{whatsapp:session.whatsapp,passcode:session.passcode,
+      items:coItems.map(it=>({isbn:it.isbn,title:it.title,price:it.price}))});
+    if(res.error){
+      if(res.error==="unavailable"){ stepAvailability(); return; }
+      failScreen(res.error); return;
+    }
+    cart.clear();updateCart();render();
+    if(res.outOfArea){ stepOutOfArea(res.order); return; }
+    stepPay(res.order);
+  }catch(e){ failScreen("We couldn't place your order just now. Please try again."); }
 }
 
 function stepSignupOutOfArea(){
