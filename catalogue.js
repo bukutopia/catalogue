@@ -558,7 +558,7 @@ function show(html){coModal.innerHTML='<button type="button" class="co-x" aria-l
 
 // --- Service area gate + out-of-area lead capture ---
 var COVERED_AREAS=["fennel","capers","brightton"]; // address must contain one of these (case-insensitive); "brightton" also matches "D'Brightton"
-function inServiceArea(addr){addr=String(addr||"").toLowerCase();return COVERED_AREAS.some(function(k){return addr.indexOf(k)>=0;});}
+function inServiceArea(addr){return true;} // area filter removed — everyone can sign up and check out
 var OUT_OF_AREA_MSG="Sorry, we don't cover your area just yet 💛 We've saved your details and will message you the moment we do.";
 async function captureLead(name,phone,addr){try{await apiPub("waitlist",{name:name||"",whatsapp:phone,address:addr});}catch(e){}}
 
