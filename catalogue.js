@@ -591,7 +591,7 @@ function stepTrimCart(){
     const rows=[...cart].map(key=>{
       const [series,title]=key.split(" :: ");
       return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed #eadfca">
-        <span style="font-size:14px;color:#243447;font-weight:600">${esc(title)} <span style="color:#9a8a72;font-weight:500">\u2014 ${esc(series)}</span></span>
+        <span style="font-size:14px;color:#243447;font-weight:600">${esc(title)}</span>
         <button class="co-trim-x" data-key="${escAttr(key)}" aria-label="Remove" style="flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:1.5px solid #e9c4bb;background:#fff;color:#c0503a;font-size:18px;font-weight:800;cursor:pointer;line-height:1">\u00d7</button>
       </div>`;
     }).join("");
@@ -628,7 +628,7 @@ function legacyWhatsApp(){
   window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`,"_blank");
 }
 
-function liRows(){return coItems.map(it=>`<div class="co-li">${esc(it.title)} <span>— ${esc(it.series)}</span></div>`).join("");}
+function liRows(){return coItems.map(it=>`<div class="co-li">${esc(it.title)}</div>`).join("");}
 
 var pendingAuthMode="login"; // which tab the "Almost there" screen opens on, set by the book-list gate
 function stepReview(){
@@ -637,7 +637,7 @@ function stepReview(){
     // Logged-in review: list with a per-book × so they can drop titles before checkout.
     const drawReview=()=>{
       const rows=coItems.map(it=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed #eadfca">
-        <span style="font-size:14px;color:#243447;font-weight:600">${esc(it.title)} <span style="color:#9a8a72;font-weight:500">— ${esc(it.series)}</span></span>
+        <span style="font-size:14px;color:#243447;font-weight:600">${esc(it.title)}</span>
         <button class="co-trim-x" data-key="${escAttr(it.key)}" aria-label="Remove ${escAttr(it.title)}" style="flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:1.5px solid #e9c4bb;background:#fff;color:#c0503a;font-size:18px;font-weight:800;cursor:pointer;line-height:1">×</button>
       </div>`).join("");
       show(`<h3 class="co-h">Your book list</h3>
