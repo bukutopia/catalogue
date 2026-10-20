@@ -940,12 +940,11 @@ function stepPay(order){
   const msg=tpl.replace(/\{ref\}/g,ref).replace(/\{titles\}/g,order.titles||items.map(i=>i.title).join(", ")).replace(/\{amount\}/g,money(total)).replace(/\{type\}/g,typeText);
   const link=`https://wa.me/${waNum()}?text=${encodeURIComponent(msg)}`;
   show(`<h3 class="co-h">Order placed — ref ${ref} 🎉</h3>
-    ${deposit?`<div class="co-note"><b>First order</b> — your first month rental is on us. You pay the <b>RM${PUBLIC_SETTINGS.deposit||60} refundable deposit</b> plus <b>${money(ship)} shipping</b>.</div>`:""}
+    ${deposit?`<p class="co-sub" style="margin:0 0 12px"><b>First order</b> — your first month rental is on us. You pay the <b>RM${PUBLIC_SETTINGS.deposit||60} refundable deposit</b> plus <b>${money(ship)} shipping</b>.</p>`:""}
     <div class="pay-summary">
       ${bookRows}
       ${deposit
-        ? `<div class="pay-row"><span>First month rental</span><span style="color:#1f8a4c;font-weight:700">FREE</span></div>
-           <div class="pay-row"><span>Refundable deposit</span><span>${money(subtotal)}</span></div>`
+        ? `<div class="pay-row"><span>Refundable deposit</span><span>${money(subtotal)}</span></div>`
         : `<div class="pay-row pay-sub"><span>Subtotal</span><span>${money(subtotal)}</span></div>`}
       <div class="pay-row"><span>Shipping (flat)</span><span>${money(ship)}</span></div>
       <div class="pay-row pay-total"><span>Total</span><span>${money(total)}</span></div>
@@ -955,7 +954,7 @@ function stepPay(order){
       <img src="${PAYMENT_QR_URL}" alt="Payment QR" style="width:210px;height:210px;object-fit:contain;border:1px solid #eadfca;border-radius:12px;padding:8px;background:#fff"
         onerror="this.style.display='none';document.getElementById('qrFallback').style.display='block'">
       <div id="qrFallback" style="display:none;font-size:13px;color:#5a4a2a;background:#fff8e6;border:1px solid #f1d889;border-radius:9px;padding:11px 13px">Pay by DuitNow to <b>${esc(PAYEE_NAME)}</b>, then send your receipt below.</div>
-      <div style="font-size:12.5px;color:#7c879b;margin-top:6px">Scan with any banking app · ${esc(PAYEE_NAME)} · Maybank</div>
+      <div style="font-size:12.5px;color:#7c879b;margin-top:6px">Scan with any banking app · ${esc(PAYEE_NAME)}</div>
       <div style="font-size:12.5px;color:#5a6b7a;margin-top:8px;line-height:1.6">Account name: <b>Bukutopia Book Rental</b><br>Account number: <b>5640 6154 9833</b><br>Bank: <b>Maybank</b></div>
     </div>
     <div class="pay-cust">
