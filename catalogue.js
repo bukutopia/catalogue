@@ -1271,7 +1271,7 @@ var SITE_BANNERS={announce:"",heroes:[]};
 var SITE_HOW={eyebrow:"",heading:"",steps:[]};
 var SITE_FAQ={eyebrow:"",heading:"",items:[]};
 var SITE_MSGS={checkout:""};
-var HERO_FILES=[]; /* empty = back office (Settings > Homepage banners) drives the hero. Put a repo filename here (e.g. "Hero%20June%201.jpg?v=1") to override the upload. */
+var HERO_FILES=["Hero%20JUNE.jpg?v=2"]; /* full-res repo file (2400x620, sharp). Set to [] to let the back office upload drive the hero (note: uploads are downscaled to ~1100px and can look blurry full-width). */
 var ANNOUNCE_FILE="Aannouncement_July.jpg?v=1";
 function buildBooksFromSheet(rows){
   if(!Array.isArray(rows)||!rows.length) return [];
