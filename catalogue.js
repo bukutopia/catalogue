@@ -936,7 +936,7 @@ function stepPay(order){
   const msg=tpl.replace(/\{ref\}/g,ref).replace(/\{titles\}/g,order.titles||items.map(i=>i.title).join(", ")).replace(/\{amount\}/g,money(total)).replace(/\{type\}/g,typeText);
   const link=`https://wa.me/${waNum()}?text=${encodeURIComponent(msg)}`;
   show(`<h3 class="co-h">Order placed — ref ${ref} 🎉</h3>
-    ${deposit?`<p class="co-sub" style="margin:0 0 12px"><b>First order</b> — your first month rental is on us. You pay the <b>RM${PUBLIC_SETTINGS.deposit||60} refundable deposit</b> plus <b>${money(ship)} shipping</b>.</p>`:""}
+    ${deposit?`<p class="co-sub" style="margin:0 0 12px"><b>First order</b> — Enjoy your first month rental <b>FREE</b>. Just pay the <b>RM${PUBLIC_SETTINGS.deposit||60} refundable deposit</b> + <b>${money(ship)} shipping</b>.</p>`:""}
     <div class="pay-summary">
       ${bookRows}
       ${deposit
