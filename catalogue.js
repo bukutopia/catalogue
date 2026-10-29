@@ -1271,7 +1271,7 @@ var SITE_BANNERS={announce:"",heroes:[]};
 var SITE_HOW={eyebrow:"",heading:"",steps:[]};
 var SITE_FAQ={eyebrow:"",heading:"",items:[]};
 var SITE_MSGS={checkout:""};
-var HERO_FILES=["Hero%20JUNE.jpg?v=2"]; /* full-res repo file (2400x620, sharp). Set to [] to let the back office upload drive the hero (note: uploads are downscaled to ~1100px and can look blurry full-width). */
+var HERO_FALLBACK=["Hero%20JUNE.jpg?v=2"]; /* shown only when the back office has no hosted hero banner. Back-office hero uploads now save full-size to Google Drive (a hosted URL) and take over automatically; legacy base64 heroes are ignored as too low-res. */
 var ANNOUNCE_FILE="Aannouncement_July.jpg?v=1";
 function buildBooksFromSheet(rows){
   if(!Array.isArray(rows)||!rows.length) return [];
@@ -1347,7 +1347,8 @@ function applyBanners(){
   if(a&&ai){ var _ann=(typeof ANNOUNCE_FILE!=="undefined"&&ANNOUNCE_FILE)?ANNOUNCE_FILE:SITE_BANNERS.announce; if(_ann){ ai.src=_ann; a.style.display="block"; } else { a.style.display="none"; } }
   var hero=document.getElementById("sbHero");
   if(!hero) return;
-  var imgs=(typeof HERO_FILES!=="undefined"&&HERO_FILES.length)?HERO_FILES.slice():(SITE_BANNERS.heroes||[]).filter(function(u){return u;});
+  var imgs=(SITE_BANNERS.heroes||[]).filter(function(u){return u && !/^data:/.test(u);}); // hosted hero URLs only (Drive/web); ignore legacy base64 (too low-res)
+  if(!imgs.length && typeof HERO_FALLBACK!=="undefined" && HERO_FALLBACK.length) imgs=HERO_FALLBACK.slice();
   if(!imgs.length){ hero.style.display="none"; hero.innerHTML=""; return; }
   hero.style.display="block";
   if(imgs.length===1){ hero.innerHTML='<a href="#books" class="hc-slide on"><img src="'+escAttr(imgs[0])+'" alt="New arrivals"></a>'; return; }
