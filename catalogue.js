@@ -1119,7 +1119,7 @@ async function myAccountPanel(){
     <p class="co-sub">${active.length?`Your ${active.length} order(s):`:"Your account"}</p>
     <div class="co-list">${listHtml}</div>
     <div class="co-row"><button class="btn-clear" id="coLogout" style="flex:1">Log out</button>
-      <button class="btn-wa" id="coClose" style="flex:1.4;justify-content:center">Let's go</button></div>`);
+      <button class="btn-wa" id="coClose" style="flex:1.4;justify-content:center">OK</button></div>`);
   coModal.querySelector("#coClose").onclick=closeCheckout;
   coModal.querySelector("#coLogout").onclick=()=>{ session=null; saveSession(); updateNavAuth(); closeCheckout(); };
   coModal.querySelectorAll(".pay-again").forEach(b=>b.onclick=()=>{
