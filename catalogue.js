@@ -533,7 +533,11 @@ const CHECKOUT_CSS=`
 #coModal .pay-row.pay-sub{color:#5a6b7a;font-weight:600}
 #coModal .pay-row.pay-total{font-weight:800;color:#103160;font-size:16px;border-top:1.5px solid #e0d6c2;border-bottom:none;padding-top:10px;margin-top:2px}
 #coModal .pay-cust{border:1px solid #eadfca;border-radius:12px;padding:12px 14px;margin:14px 0 2px;font-size:13.5px;color:#243447;line-height:1.9}
-#coModal .pay-cust b{color:#103160}`;
+#coModal .pay-cust b{color:#103160}
+.profile-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:70;background:#fff;border:1px solid #eadfca;border-radius:12px;box-shadow:0 12px 30px rgba(16,49,96,.18);padding:6px;min-width:180px;display:flex;flex-direction:column}
+.profile-menu .pm-item{display:block;width:100%;text-align:left;background:none;border:none;font:inherit;font-size:14px;font-weight:700;color:#103160;padding:11px 13px;border-radius:9px;cursor:pointer;white-space:nowrap}
+.profile-menu .pm-item:hover{background:#f3eee3}
+.profile-menu .pm-logout{color:#c0503a;border-top:1px solid #f0e8d8;border-radius:0 0 9px 9px;margin-top:3px;padding-top:12px}`;
 
 const modalBg=document.getElementById("modalBg");
 const coModal=document.getElementById("coModal");
@@ -977,7 +981,68 @@ function updateNavAuth(){
   if(ic){ ic.style.position="relative"; let d=ic.querySelector(".nav-dot"); if(pend){ if(!d){ d=document.createElement("span"); d.className="nav-dot"; ic.appendChild(d); } } else if(d){ d.remove(); } }
 }
 if(navCart) navCart.addEventListener("click",e=>{e.preventDefault();openCart();});
-if(navLogin) navLogin.addEventListener("click",e=>{e.preventDefault();openAccount();});
+if(navLogin) navLogin.addEventListener("click",e=>{e.preventDefault(); if(session&&API_URL){ toggleProfileMenu(); } else { openAccount(); }});
+
+/* Profile dropdown menu (shown when signed in): My Profile / My Orders / Log out */
+function closeProfileMenu(){ var m=document.getElementById("profileMenu"); if(m)m.remove(); document.removeEventListener("mousedown",profileMenuOutside,true); document.removeEventListener("keydown",profileMenuEsc,true); }
+function profileMenuOutside(e){ var m=document.getElementById("profileMenu"); if(m && !m.contains(e.target) && !navLogin.contains(e.target) && e.target!==navLogin) closeProfileMenu(); }
+function profileMenuEsc(e){ if(e.key==="Escape") closeProfileMenu(); }
+function toggleProfileMenu(){
+  if(document.getElementById("profileMenu")){ closeProfileMenu(); return; }
+  var host=navLogin.parentNode; if(host && getComputedStyle(host).position==="static") host.style.position="relative";
+  var m=document.createElement("div"); m.id="profileMenu"; m.className="profile-menu"; m.setAttribute("role","menu");
+  m.innerHTML='<button type="button" class="pm-item" data-act="profile">👤 My Profile</button>'
+            +'<button type="button" class="pm-item" data-act="orders">📦 My Orders</button>'
+            +'<button type="button" class="pm-item pm-logout" data-act="logout">↪ Log out</button>';
+  host.appendChild(m);
+  m.querySelectorAll(".pm-item").forEach(function(b){ b.onclick=function(ev){ ev.stopPropagation(); var a=b.dataset.act; closeProfileMenu();
+    if(a==="profile") openProfile();
+    else if(a==="orders") myAccountPanel();
+    else if(a==="logout"){ session=null; saveSession(); updateNavAuth(); }
+  };});
+  setTimeout(function(){ document.addEventListener("mousedown",profileMenuOutside,true); document.addEventListener("keydown",profileMenuEsc,true); },0);
+}
+
+/* My Profile: view + edit the account's own details (name, contact, email, address). */
+async function openProfile(){
+  show(`<h3 class="co-h">My Profile</h3><p class="co-sub">Loading your details…</p>`);
+  let res={};
+  try{ res=await apiPub("getProfile",{whatsapp:session.whatsapp,passcode:session.passcode}); }catch(e){ res={error:"network"}; }
+  if(res.error){
+    show(`<h3 class="co-h">My Profile</h3><p class="co-sub">We couldn't load your details just now. Please try again in a moment.</p>
+      <div class="co-row"><button class="btn-wa" id="coClose" style="flex:1;justify-content:center">OK</button></div>`);
+    coModal.querySelector("#coClose").onclick=closeCheckout; return;
+  }
+  const p={name:res.name||"",whatsapp:res.whatsapp||"",email:res.email||"",address:res.address||""};
+  show(`<h3 class="co-h">My Profile</h3>
+    <p class="co-sub">Update your details below, then tap Save.</p>
+    <label>Name</label><input id="pf_name" type="text" value="${escAttr(p.name)}">
+    <label>Contact number (WhatsApp)</label><input id="pf_phone" inputmode="numeric" value="${escAttr(p.whatsapp)}">
+    <label>Email address</label><input id="pf_email" type="email" inputmode="email" value="${escAttr(p.email)}">
+    <label>Delivery address</label><input id="pf_addr" type="text" value="${escAttr(p.address)}">
+    <div class="co-err" id="coErr"></div>
+    <div class="co-row"><button class="btn-clear" id="coBack" style="flex:1">Close</button>
+      <button class="btn-wa" id="coSave" style="flex:1.4;justify-content:center">Save changes</button></div>`);
+  coModal.querySelector("#coBack").onclick=closeCheckout;
+  coModal.querySelector("#coSave").onclick=async()=>{
+    const err=coModal.querySelector("#coErr");
+    const name=(coModal.querySelector("#pf_name").value||"").trim();
+    const phone=(coModal.querySelector("#pf_phone").value||"").trim();
+    const email=(coModal.querySelector("#pf_email").value||"").trim();
+    const addr=(coModal.querySelector("#pf_addr").value||"").trim();
+    if(!name){err.textContent="Please enter your name.";return;}
+    if(!phone){err.textContent="Please enter your contact number.";return;}
+    err.textContent="Saving…";
+    let r;
+    try{ r=await apiPub("updateProfile",{whatsapp:session.whatsapp,passcode:session.passcode,name:name,newWhatsapp:phone,email:email,address:addr}); }
+    catch(e){ err.textContent="Couldn't save — please check your connection and try again."; return; }
+    if(r&&r.error){ err.textContent=r.error; return; }
+    session.name=r.name||name; session.whatsapp=r.whatsapp||phone; session.address=(r.address!=null?r.address:addr); saveSession(); updateNavAuth();
+    show(`<h3 class="co-h">Saved ✅</h3><p class="co-sub">Your details have been updated.</p>
+      <div class="co-row"><button class="btn-wa" id="coClose" style="flex:1;justify-content:center">OK</button></div>`);
+    coModal.querySelector("#coClose").onclick=closeCheckout;
+  };
+}
 
 // Rental cart link → open checkout (or a friendly empty state).
 function openCart(){
@@ -1089,7 +1154,7 @@ function fmtDate(d,withTime){
 
 // "My account" — the customer's orders and their live status.
 async function myAccountPanel(){
-  show(`<h3 class="co-h">Hi ${esc(session.name||"there")} 👋</h3><p class="co-sub">Loading your orders…</p>`);
+  show(`<h3 class="co-h">My Orders</h3><p class="co-sub">Loading your orders…</p>`);
   let res={};
   try{ res=await apiPub("myOrders",{whatsapp:session.whatsapp,passcode:session.passcode}); }
   catch(e){ res={error:"network"}; }
@@ -1101,7 +1166,7 @@ async function myAccountPanel(){
   else if(active.length===0){ listHtml=`<div class="co-note">✨ A world of stories awaits! Add up to ${MAX_BOOKS} books and check out to start your BUKUTOPIA journey!</div>`; }
   else {
     listHtml=active.map(o=>{
-      const ref=String(o.id).slice(0,4).toUpperCase();
+      const ref=o.ref||String(o.id).slice(0,4).toUpperCase();
       const pendingUnpaid=o.status==="Pending payment" && String(o.paymentStatus)!=="Confirmed";
       const meta=(o.status==="Out"||o.status==="Extended")
         ? (o.dueDate?`Due back ${fmtDate(o.dueDate)}`:"")
@@ -1115,13 +1180,11 @@ async function myAccountPanel(){
       </div>`;
     }).join("");
   }
-  show(`<h3 class="co-h">Hi ${esc(session.name||"there")} 👋</h3>
-    <p class="co-sub">${active.length?`Your ${active.length} order(s):`:"Your account"}</p>
+  show(`<h3 class="co-h">My Orders</h3>
+    <p class="co-sub">${active.length?"Your orders, latest first:":"Your account"}</p>
     <div class="co-list">${listHtml}</div>
-    <div class="co-row"><button class="btn-clear" id="coLogout" style="flex:1">Log out</button>
-      <button class="btn-wa" id="coClose" style="flex:1.4;justify-content:center">OK</button></div>`);
+    <div class="co-row"><button class="btn-wa" id="coClose" style="flex:1;justify-content:center">Close</button></div>`);
   coModal.querySelector("#coClose").onclick=closeCheckout;
-  coModal.querySelector("#coLogout").onclick=()=>{ session=null; saveSession(); updateNavAuth(); closeCheckout(); };
   coModal.querySelectorAll(".pay-again").forEach(b=>b.onclick=()=>{
     const o=orders.find(x=>String(x.id)===b.dataset.id);
     if(o) stepPay({id:o.id,ref:o.ref,orderNo:o.orderNo,titles:o.titles,amount:o.amount,type:o.type});
