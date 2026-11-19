@@ -206,6 +206,30 @@ let BOOKS = [];
 const cart = new Set();
 function saveCart(){try{localStorage.setItem("bk_cart",JSON.stringify([...cart]));}catch(e){}}
 function loadCart(){try{const a=JSON.parse(localStorage.getItem("bk_cart")||"[]");if(Array.isArray(a)){const valid=new Set();(BOOKS||[]).forEach(x=>(x.books||[]).forEach(b=>valid.add(x.series+" :: "+b.title)));a.forEach(k=>{if(valid.has(k))cart.add(k);});}}catch(e){}}
+/* ---- 24h cart hold -------------------------------------------------------
+   After an order is placed the books stay in the cart, marked "reserved",
+   until the order's 24h payment window lapses. The backend already holds the
+   copies (expiresAt + hourly autoCancelStaleOrders); this mirrors that hold
+   on the customer's own device so their picks don't appear to vanish.      */
+let cartHold=null;                       // {id, ref, amount, type, titles, expiresAt, keys[]}
+function saveHold(h){try{h?localStorage.setItem("bk_hold",JSON.stringify(h)):localStorage.removeItem("bk_hold");}catch(e){}}
+function holdLive(h){return !!(h&&h.expiresAt&&Date.now()<new Date(h.expiresAt).getTime());}
+function dropHold(){cartHold=null;saveHold(null);}
+// Load a saved hold at start-up. A lapsed hold also empties the cart, matching
+// the server-side release of those copies.
+function initHold(){
+  let h=null; try{h=JSON.parse(localStorage.getItem("bk_hold")||"null");}catch(e){}
+  if(!h)return;
+  if(holdLive(h)) cartHold=h; else { cart.clear(); saveHold(null); }
+}
+// Any edit to the cart ends the hold — the saved order no longer matches what
+// is on screen, so the next checkout should supersede it (the backend does
+// exactly that via supersedePendingOrders).
+function holdMatchesCart(){
+  if(!holdLive(cartHold)||!Array.isArray(cartHold.keys))return false;
+  if(cartHold.keys.length!==cart.size)return false;
+  return cartHold.keys.every(k=>cart.has(k));
+}
 function saveSession(){try{session?localStorage.setItem("bk_session",JSON.stringify(session)):localStorage.removeItem("bk_session");}catch(e){}}
 function loadSession(){try{const x=JSON.parse(localStorage.getItem("bk_session")||"null");if(x&&x.whatsapp)session=x;}catch(e){}}
 const stickyCover = {};   // series name -> clicked title (the locked cover)
@@ -482,23 +506,31 @@ function refreshAllCards(){
 }
 function toggle(key){ cart.has(key)?cart.delete(key):cart.add(key); updateCart(); refreshAllCards(); }
 
+const CART_ICON='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h2.2l2.3 11.2a2 2 0 0 0 2 1.6h8.1a2 2 0 0 0 2-1.5L21 7H5.2"/></svg>';
 const cartbar=document.getElementById("cartbar");
 function updateCart(){
   const n=cart.size;
   cartbar.classList.toggle("show",n>0);
   const over=n>MAX_BOOKS;
+  if(cartHold && !holdMatchesCart()) dropHold();   // cart edited (or hold lapsed) → no longer reserved
+  const reserved=holdMatchesCart();
   document.getElementById("cartCount").innerHTML = over
     ? `${n} books selected <span class="cart-warn">(max ${MAX_BOOKS} per name — remove ${n-MAX_BOOKS})</span>`
-    : `${n} ${n===1?"book":"books"} selected`;
-  document.getElementById("cartTitles").textContent=[...cart].map(k=>k.split(" :: ")[1]).join(", ");
+    : reserved
+      ? `${n} ${n===1?"book":"books"} reserved <span class="cart-held">· order #${esc(cartHold.ref||"")}</span>`
+      : `${n} ${n===1?"book":"books"} selected`;
+  document.getElementById("cartTitles").textContent = reserved
+    ? `Held until ${fmtDate(cartHold.expiresAt,true)} — tap to pay and send your receipt`
+    : [...cart].map(k=>k.split(" :: ")[1]).join(", ");
   const btn=document.getElementById("btnOrder");
   if(btn){ btn.disabled=false; btn.style.opacity=1; btn.style.cursor="pointer";
-    btn.title=over?`Tap to trim to ${MAX_BOOKS} books`:""; }
+    btn.innerHTML=(reserved?CART_ICON+" Pay now":CART_ICON+" Check out");
+    btn.title=over?`Tap to trim to ${MAX_BOOKS} books`:(reserved?"Finish paying for your reserved books":""); }
   const badge=document.getElementById("navCartCount");
   if(badge){ badge.textContent=n; badge.hidden = n===0; }
   saveCart();
 }
-document.getElementById("btnClear").addEventListener("click",()=>{cart.clear();updateCart();refreshAllCards();});
+document.getElementById("btnClear").addEventListener("click",()=>{cart.clear();dropHold();updateCart();refreshAllCards();});
 
 /* ===================== Checkout flow (Ordering process) =====================
    Implements process-flows.html Flow 1. See SYSTEM-DESIGN.md §5.
@@ -616,6 +648,13 @@ function stepTrimCart(){
 }
 function openCheckout(){
   if(cart.size===0)return;
+  // Reserved cart → go straight back to the QR / send-receipt screen for the
+  // order already placed, instead of creating a second one.
+  if(holdMatchesCart()){
+    coItems=cartItems();                 // stepPay falls back to coItems for the line items
+    stepPay({id:cartHold.id,ref:cartHold.ref,amount:cartHold.amount,
+      type:cartHold.type,titles:cartHold.titles,expiresAt:cartHold.expiresAt});
+    return; }
   if(cart.size>MAX_BOOKS){ stepTrimCart(); return; }
   coItems=cartItems();
   if(!API_URL){legacyWhatsApp();return;}
@@ -897,8 +936,14 @@ async function stepConfirm(){
       if(res.error==="unavailable"){ stepAvailability(); return; }
       failScreen(res.error); return;
     }
-    cart.clear();updateCart();render();
-    if(res.outOfArea){ stepOutOfArea(res.order); return; }
+    if(res.outOfArea){ cart.clear();dropHold();updateCart();render(); stepOutOfArea(res.order); return; }
+    // Books stay in the cart, now reserved, for the order's 24h payment window.
+    const o=res.order||{};
+    cartHold={id:o.id,ref:o.ref||"",amount:o.amount,type:o.type,titles:o.titles,
+      expiresAt:o.expiresAt||new Date(Date.now()+24*3600*1000).toISOString(),keys:[...cart]};
+    saveHold(cartHold);
+    if(session){ session.hasPending=true; saveSession(); }
+    updateNavAuth(); updateCart(); render();
     stepPay(res.order);
   }catch(e){ failScreen("We couldn't place your order just now. Please try again."); }
 }
@@ -974,11 +1019,8 @@ const navLogin=document.getElementById("navLogin");
 
 function updateNavAuth(){
   if(!navLogin)return;
-  const pend=!!(session&&session.hasPending);
-  if(session){ navLogin.innerHTML="👤 "+esc(session.name?String(session.name).split(" ")[0]:"My account")+(pend?' <span class="nav-dot" title="Unfinished order — payment pending"></span>':""); navLogin.classList.add("me"); }
+  if(session){ navLogin.innerHTML="👤 "+esc(session.name?String(session.name).split(" ")[0]:"My account"); navLogin.classList.add("me"); }
   else { navLogin.textContent="Login"; navLogin.classList.remove("me"); }
-  const ic=document.getElementById("navLoginIcon");
-  if(ic){ ic.style.position="relative"; let d=ic.querySelector(".nav-dot"); if(pend){ if(!d){ d=document.createElement("span"); d.className="nav-dot"; ic.appendChild(d); } } else if(d){ d.remove(); } }
 }
 if(navCart) navCart.addEventListener("click",e=>{e.preventDefault();openCart();});
 if(navLogin) navLogin.addEventListener("click",e=>{e.preventDefault(); if(session&&API_URL){ toggleProfileMenu(); } else { openAccount(); }});
@@ -1161,6 +1203,13 @@ async function myAccountPanel(){
   const orders=res.orders||[];
   const active=orders.filter(o=>o.status!=="Cancelled");
   if(session){ session.hasPending=active.some(o=>o.status==="Pending payment"&&String(o.paymentStatus)!=="Confirmed"); saveSession(); updateNavAuth(); }
+  // The held order has been paid, cancelled or has lapsed → release the cart.
+  if(cartHold && !res.error){
+    const held=orders.find(o=>String(o.id)===String(cartHold.id));
+    if(!held || held.status!=="Pending payment" || String(held.paymentStatus)==="Confirmed"){
+      cart.clear(); dropHold(); updateCart(); refreshAllCards();
+    }
+  }
   let listHtml;
   if(res.error){ listHtml=`<p class="co-sub">We couldn't load your orders just now. Please try again in a moment.</p>`; }
   else if(active.length===0){ listHtml=`<div class="co-note">✨ A world of stories awaits! Add up to ${MAX_BOOKS} books and check out to start your BUKUTOPIA journey!</div>`; }
@@ -1460,7 +1509,7 @@ async function init(){
       else throw new Error("empty");
     }catch(e){BOOKS=normalize(DEFAULT_BOOKS);note.textContent="Showing built-in catalogue.";}
   }else{BOOKS=normalize(DEFAULT_BOOKS);}
-  loadSession();loadCart();buildFilters();render();updateCart();updateNavAuth();
+  loadSession();loadCart();initHold();buildFilters();render();updateCart();updateNavAuth();
   setupAutocomplete();
 }
 ["search","age","avail"].forEach(id=>document.getElementById(id).addEventListener("input",render));
